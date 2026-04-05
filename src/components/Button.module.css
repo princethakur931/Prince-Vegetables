@@ -1,0 +1,54 @@
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+}
+
+.primary {
+  background: linear-gradient(120deg, #eb7a4f, #ef5b45);
+  color: white;
+  box-shadow: 0 10px 22px rgba(239, 91, 69, 0.28);
+}
+
+.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 24px rgba(239, 91, 69, 0.35);
+}
+
+.secondary {
+  background: var(--color-primary);
+  color: white;
+}
+
+.secondary:hover {
+  background: var(--color-primary-hover);
+  transform: translateY(-2px);
+}
+
+.iconOnly {
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: white;
+  color: #333;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iconOnly:hover {
+  background: #f0f0f0;
+  transform: scale(1.05);
+}

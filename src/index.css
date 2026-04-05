@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700&display=swap');
+
+:root {
+  --color-primary: #2f7f5f;
+  --color-primary-hover: #24654b;
+  --color-bg-light: #fff8ec;
+  --color-bg-light-green: #e6f4dc;
+  --color-bg-orange: #ffe3c7;
+  --color-text-main: #1f2f24;
+  --color-text-muted: #4e6355;
+  --color-text-soft: #63776a;
+  --color-card-bg: rgba(255, 255, 255, 0.72);
+  --color-card-border: rgba(255, 255, 255, 0.54);
+  --shadow-sm: 0 6px 14px rgba(43, 45, 35, 0.07);
+  --shadow-md: 0 14px 34px rgba(43, 45, 35, 0.11);
+  --shadow-lg: 0 22px 56px rgba(43, 45, 35, 0.18);
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --font-heading: 'Fraunces', serif;
+  --font-body: 'Manrope', sans-serif;
+  --container-max: 1120px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-text-main);
+  background: linear-gradient(180deg, #fff7ec 0%, #ffe8d1 100%);
+  overflow-x: hidden;
+  line-height: 1.5;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+body::-webkit-scrollbar {
+  display: none;
+}
+
+html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--color-text-main);
+  letter-spacing: -0.02em;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.glass {
+  background: var(--color-card-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--color-card-border);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 640px) {
+  body {
+    background: linear-gradient(180deg, #fff8ef 0%, #ffe6cf 100%);
+  }
+}

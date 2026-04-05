@@ -1,0 +1,121 @@
+.card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 0.9rem;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+  max-width: none;
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-md);
+}
+
+.imageWrapper {
+  border-radius: var(--radius-md);
+  padding: 0;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 190px;
+  overflow: hidden;
+}
+
+.badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: white;
+  color: var(--color-text-main);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  z-index: 3;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  position: relative;
+  z-index: 1;
+  transition: transform 0.5s ease;
+}
+
+.card:hover .image {
+  transform: scale(1.08) rotate(3deg);
+}
+
+.content {
+  padding-top: 1.05rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.title {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: var(--color-text-main);
+}
+
+.weight {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.price {
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--color-text-main);
+}
+
+.addButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid #eee;
+  background: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  color: var(--color-text-main);
+  transition: all 0.2s ease;
+}
+
+.addButton:hover {
+  background: #ef5b45;
+  color: white;
+  border-color: #ef5b45;
+  transform: scale(1.1);
+}
+
+@media (max-width: 640px) {
+  .card {
+    border-radius: 18px;
+  }
+
+  .imageWrapper {
+    height: 164px;
+  }
+}
