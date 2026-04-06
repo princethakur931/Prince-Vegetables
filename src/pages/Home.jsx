@@ -7,6 +7,26 @@ import styles from './Home.module.css';
 // We import the hero image we generated
 import heroBg from '../assets/hero_vegetables_1775370899939.png';
 
+const titleContainer = {
+  hidden: { opacity: 1 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.32,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const titleLine = {
+  hidden: { opacity: 0, y: 14 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: 'easeOut' },
+  },
+};
+
 const DAILY_BESTSELLERS = [
   'Potato (Aloo)',
   'Onion (Pyaaz)',
@@ -46,15 +66,18 @@ const Home = () => {
         transition={{ duration: 1 }}
       >
         <div className={styles.heroContent}>
-          <motion.h1 
+          <motion.h1
             className={styles.title}
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.8 }}
+            variants={titleContainer}
+            initial="hidden"
+            animate="show"
           >
-            Fresh Vegetables,
-            <br />
-            Zero Compromise.
+            <motion.span className={styles.titleLine} variants={titleLine}>
+              Fresh Vegetables,
+            </motion.span>
+            <motion.span className={styles.titleLine} variants={titleLine}>
+              Zero Compromise.
+            </motion.span>
           </motion.h1>
           
           <motion.p 
@@ -67,6 +90,7 @@ const Home = () => {
           </motion.p>
           
           <motion.div
+            className={styles.ctaWrap}
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.6, duration: 0.8 }}
@@ -108,8 +132,8 @@ const Home = () => {
             src={heroBg} 
             alt="Fresh Organic Vegetables" 
             className={styles.heroImage}
-            animate={isMobile ? undefined : { y: [0, -15, 0] }}
-            transition={isMobile ? undefined : { repeat: Infinity, duration: 6, ease: 'easeInOut' }}
+            animate={{ y: isMobile ? [0, -7, 0] : [0, -15, 0] }}
+            transition={{ repeat: Infinity, duration: isMobile ? 4.8 : 6, ease: 'easeInOut' }}
           />
         </motion.div>
       </motion.section>

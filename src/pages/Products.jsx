@@ -18,6 +18,13 @@ import palakImg from '../assets/Fresh desi palak on burlap cloth.png';
 import okraImg from '../assets/Fresh okra with star-shaped seeds.png';
 import brinjalImg from '../assets/Fresh eggplant on soft purple background.png';
 import onionImg from '../assets/Fresh red onion and sliced beauty.png';
+import beetrootImg from '../assets/Vibrant beetroot against soft pink backdrop.png';
+import peasImg from '../assets/Fresh green peas on wooden surface.png';
+import lettuceImg from '../assets/Fresh green lettuce on wooden surface.png';
+import beansImg from '../assets/Fresh green beans on beige surface.png';
+import gawarBeansImg from '../assets/Fresh green beans on slate background.png';
+import cucumberImg from '../assets/Fresh cucumber with slices on green.png';
+import radishImg from '../assets/Fresh daikon radish and slices.png';
 
 const SECTION_ORDER = [
   'daily-essentials',
@@ -148,6 +155,34 @@ const pickImage = (name, sectionKey) => {
 
   if (value.includes('potato') || value.includes('aloo')) {
     return potatoImg;
+  }
+
+  if (value.includes('beetroot') || value.includes('chukandar')) {
+    return beetrootImg;
+  }
+
+  if (value.includes('peas') || value.includes('matar')) {
+    return peasImg;
+  }
+
+  if (value.includes('lettuce') || value.includes('salad patta')) {
+    return lettuceImg;
+  }
+
+  if (value.includes('gawar') || value.includes('cluster beans')) {
+    return gawarBeansImg;
+  }
+
+  if (value.includes('beans') || value.includes('phali') || value.includes('farasbi') || value.includes('barbati') || value.includes('valor')) {
+    return beansImg;
+  }
+
+  if (value.includes('cucumber') || value.includes('kheera')) {
+    return cucumberImg;
+  }
+
+  if (value.includes('radish') || value.includes('mooli')) {
+    return radishImg;
   }
 
   if (value.includes('ginger') || value.includes('adrak')) {

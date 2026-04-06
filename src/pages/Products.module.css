@@ -51,6 +51,7 @@
   align-self: start;
   border-radius: 1rem;
   padding: 1rem;
+  border: 1px solid rgba(236, 214, 192, 0.95);
 }
 
 .filterTitle {
@@ -59,7 +60,8 @@
 }
 
 .filterRow {
-  display: flex;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.55rem;
   color: var(--color-text-main);
@@ -69,7 +71,8 @@
 }
 
 .filterLabel {
-  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .filterCount {
@@ -232,27 +235,46 @@
     width: calc(100% - 1.1rem);
     grid-template-columns: 1fr;
     gap: 0.9rem;
+    overflow-x: hidden;
   }
 
   .filterPanel {
     position: static;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.15rem 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.22rem;
     padding: 0.85rem;
+    width: 100%;
+    max-width: 100%;
+    border: 1px solid #ebd1b9;
+    background: rgba(255, 249, 241, 0.9);
+    box-shadow: 0 6px 16px rgba(43, 45, 35, 0.07);
   }
 
   .filterTitle {
-    grid-column: 1 / -1;
     margin-bottom: 0.3rem;
   }
 
   .resetButton {
-    grid-column: 1 / -1;
+    margin-top: 0.55rem;
   }
 
   .filterCount {
     justify-self: end;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .filterRow {
+    font-size: 0.9rem;
+    padding: 0.32rem 0;
+    width: 100%;
+  }
+
+  .sectionsColumn,
+  .sectionBlock {
+    min-width: 0;
   }
 
   .sectionBlock {

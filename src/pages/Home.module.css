@@ -54,6 +54,10 @@
   color: var(--color-text-main);
 }
 
+.titleLine {
+  display: block;
+}
+
 .subtitle {
   font-size: clamp(1rem, 1.8vw, 1.16rem);
   color: var(--color-text-muted);
@@ -65,6 +69,10 @@
 .ctaButton {
   padding: 0.95rem 2rem;
   font-size: 1rem;
+}
+
+.ctaWrap {
+  display: inline-flex;
 }
 
 .stats {
@@ -238,11 +246,30 @@
 
   .subtitle {
     margin-bottom: 1.25rem;
+    text-align: center;
+  }
+
+  .heroContent {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .title {
+    margin-bottom: 1rem;
+  }
+
+  .ctaWrap {
+    justify-content: center;
+    width: 100%;
   }
 
   .stats {
     grid-template-columns: 1fr;
     gap: 0.6rem;
+    width: 100%;
   }
 
   .heroImage {
