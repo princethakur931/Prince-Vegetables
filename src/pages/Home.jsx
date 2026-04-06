@@ -7,6 +7,17 @@ import styles from './Home.module.css';
 // We import the hero image we generated
 import heroBg from '../assets/hero_vegetables_1775370899939.png';
 
+const DAILY_BESTSELLERS = [
+  'Potato (Aloo)',
+  'Onion (Pyaaz)',
+  'Tomato (Tamatar)',
+  'Green Chilli (Hari Mirch)',
+  'Ginger (Adrak)',
+  'Garlic (Lahsun)',
+  'Coriander Leaves (Dhaniya Patta)',
+  'Lemon (Nimbu)'
+];
+
 const Home = () => {
   const navigate = useNavigate();
   const { scrollY } = useScroll();
@@ -101,6 +112,27 @@ const Home = () => {
             transition={isMobile ? undefined : { repeat: Infinity, duration: 6, ease: 'easeInOut' }}
           />
         </motion.div>
+      </motion.section>
+
+      <motion.section
+        className={`${styles.dailySpotlight} glass`}
+        initial={{ opacity: 0, y: 35 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-80px' }}
+        transition={{ duration: 0.55 }}
+      >
+        <div className={styles.spotlightHeader}>
+          <h2>Daily Essentials - Top Selling</h2>
+          <p>Most ordered vegetables from our regular buyers.</p>
+        </div>
+
+        <div className={styles.chipGrid}>
+          {DAILY_BESTSELLERS.map((item) => (
+            <span key={item} className={styles.vegChip}>
+              {item}
+            </span>
+          ))}
+        </div>
       </motion.section>
 
       <section className={styles.features}>

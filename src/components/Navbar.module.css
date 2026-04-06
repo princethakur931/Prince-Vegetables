@@ -2,8 +2,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1.25rem;
-  padding: 0.9rem 1.35rem;
+  gap: 1rem;
+  padding: 0.55rem 1.15rem;
   position: sticky;
   top: 0.85rem;
   margin: 0.9rem auto 0;
@@ -12,9 +12,24 @@
   border-radius: 999px;
 }
 
+.brandLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+}
+
+.brandLogo {
+  width: 2.45rem;
+  height: 2.45rem;
+  object-fit: contain;
+  background: transparent;
+  mix-blend-mode: multiply;
+  flex: 0 0 auto;
+}
+
 .logo a {
   font-family: var(--font-heading);
-  font-size: clamp(1.1rem, 2.7vw, 1.45rem);
+  font-size: clamp(1rem, 2.1vw, 1.32rem);
   font-weight: 700;
   color: var(--color-text-main);
   letter-spacing: -0.5px;
@@ -49,10 +64,10 @@
   align-items: center;
   background: rgba(255, 255, 255, 0.86);
   border-radius: 999px;
-  padding: 0.45rem 0.9rem;
+  padding: 0.35rem 0.8rem;
   border: 1px solid #d8dfd2;
   outline: 1px solid #c4d0bc;
-  width: 220px;
+  width: 205px;
 }
 
 .searchBar:focus-within {
@@ -71,7 +86,7 @@
   outline: none;
   width: 100%;
   font-family: var(--font-body);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--color-text-soft);
 }
 
@@ -84,8 +99,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 2.15rem;
+  height: 2.15rem;
   padding: 0;
   border-radius: 50%;
   transition: transform 0.22s ease, background 0.22s ease;
@@ -179,6 +194,12 @@
 
   .navbar {
     border-radius: 1rem;
+    padding: 0.5rem 0.9rem;
+  }
+
+  .brandLogo {
+    width: 2.2rem;
+    height: 2.2rem;
   }
 }
 

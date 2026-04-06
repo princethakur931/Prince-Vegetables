@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Search, ShoppingBag, Menu, X } from 'lucide-react';
 import styles from './Navbar.module.css';
+import brandIcon from '../assets/Vibrant vegetable assortment in detail.png';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,7 +12,10 @@ const Navbar = () => {
   return (
     <nav className={`${styles.navbar} glass`}>
       <div className={styles.logo}>
-        <NavLink to="/" onClick={closeMenu}>Prince Vegetables</NavLink>
+        <NavLink to="/" onClick={closeMenu} className={styles.brandLink}>
+          <img src={brandIcon} alt="Prince Vegetables" className={styles.brandLogo} />
+          <span>Prince Vegetables</span>
+        </NavLink>
       </div>
       
       <div className={styles.navLinks}>
