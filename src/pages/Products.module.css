@@ -154,51 +154,9 @@
   gap: 0.95rem;
 }
 
-.sectionRowViewport {
-  overflow: hidden;
-  border-radius: 0.9rem;
-  position: relative;
-}
-
-.sectionRowViewport::before,
-.sectionRowViewport::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 26px;
-  z-index: 1;
-  pointer-events: none;
-}
-
-.sectionRowViewport::before {
-  left: 0;
-  background: linear-gradient(to right, rgba(255, 247, 236, 0.95), transparent);
-}
-
-.sectionRowViewport::after {
-  right: 0;
-  background: linear-gradient(to left, rgba(255, 247, 236, 0.95), transparent);
-}
-
-.sectionRowTrack {
-  display: flex;
-  gap: 0.95rem;
-  width: max-content;
-  padding: 0.2rem 0;
-}
-
-.sectionRowItem {
-  flex: 0 0 245px;
-}
-
 @media (max-width: 1100px) {
   .sectionGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .sectionRowItem {
-    flex-basis: 220px;
   }
 }
 
@@ -284,13 +242,5 @@
   .sectionGrid {
     grid-template-columns: 1fr;
     gap: 0.75rem;
-  }
-
-  .sectionRowTrack {
-    gap: 0.75rem;
-  }
-
-  .sectionRowItem {
-    flex-basis: min(72vw, 245px);
   }
 }

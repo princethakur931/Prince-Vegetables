@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import ProductCard from '../components/ProductCard';
+import ProductCarousel from '../components/ProductCarousel';
 import styles from './Products.module.css';
 
 import carrotImg from '../assets/fresh_carrot_1775370917174.png';
@@ -301,7 +302,6 @@ const VEGETABLE_SECTIONS = Object.fromEntries(
 
 const Products = () => {
   const [selectedSections, setSelectedSections] = useState(SECTION_ORDER);
-
   const allSelected = selectedSections.length === SECTION_ORDER.length;
 
   const allVegetablesCount = useMemo(
@@ -403,23 +403,7 @@ const Products = () => {
                   <p className={styles.sectionSubtext}>{section.subtitle}</p>
 
                   {allSelected ? (
-                    <div className={styles.sectionRowViewport}>
-                      <motion.div
-                        className={styles.sectionRowTrack}
-                        animate={{ x: ['0%', '-50%'] }}
-                        transition={{
-                          duration: Math.max(18, section.items.length * 2.8),
-                          repeat: Infinity,
-                          ease: 'linear'
-                        }}
-                      >
-                        {[...section.items, ...section.items].map((product, productIndex) => (
-                          <div className={styles.sectionRowItem} key={`${product.id}-${productIndex}`}>
-                            <ProductCard product={product} />
-                          </div>
-                        ))}
-                      </motion.div>
-                    </div>
+                    <ProductCarousel products={section.items} />
                   ) : (
                     <div className={styles.sectionGrid}>
                       {section.items.map((product) => (
