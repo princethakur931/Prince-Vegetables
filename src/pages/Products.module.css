@@ -16,24 +16,90 @@
 }
 
 .header {
-  width: min(var(--container-max), calc(100% - 1.8rem));
+  width: min(980px, calc(100% - 1.8rem));
   margin: 0 auto 1.4rem;
   position: relative;
   z-index: 2;
 }
 
-.pageTitle {
-  font-size: clamp(2rem, 4.6vw, 4rem);
-  line-height: 1.06;
-  color: var(--color-text-main);
-  margin-bottom: 0.9rem;
+.adSection {
+  border-radius: 1.2rem;
+  padding: 0.5rem;
+  border: none;
 }
 
-.pageSubtitle {
-  font-size: clamp(0.98rem, 1.8vw, 1.08rem);
-  color: var(--color-text-soft);
-  line-height: 1.6;
-  max-width: 58ch;
+.bannerFrame {
+  position: relative;
+  border-radius: 0.95rem;
+  overflow: hidden;
+  border: none;
+  background: #fff9f0;
+  width: 100%;
+  aspect-ratio: var(--banner-aspect-ratio, 1536 / 547);
+}
+
+.bannerImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  object-position: center;
+  background: #fff9f0;
+  will-change: transform, opacity;
+}
+
+.bannerNavButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--color-text-main);
+  box-shadow: 0 10px 20px rgba(37, 39, 31, 0.12);
+  cursor: pointer;
+}
+
+.bannerNavButton:hover {
+  background: white;
+}
+
+.bannerNavLeft {
+  left: 0.6rem;
+}
+
+.bannerNavRight {
+  right: 0.6rem;
+}
+
+.bannerDots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.45rem;
+  padding-top: 0.55rem;
+}
+
+.bannerDot {
+  width: 8px;
+  height: 8px;
+  border: 0;
+  border-radius: 999px;
+  background: #d9c7b7;
+  cursor: pointer;
+  transition: width 0.24s ease, background-color 0.24s ease;
+}
+
+.bannerDotActive {
+  width: 24px;
+  background: #ef5b45;
 }
 
 .catalogLayout {
@@ -187,8 +253,27 @@
     margin-bottom: 0.8rem;
   }
 
-  .pageTitle {
-    margin-bottom: 0.6rem;
+  .adSection {
+    border-radius: 0.95rem;
+    padding: 0.5rem;
+  }
+
+  .bannerNavButton {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .bannerNavLeft {
+    left: 0.45rem;
+  }
+
+  .bannerNavRight {
+    right: 0.45rem;
+  }
+
+  .bannerDots {
+    padding-top: 0.45rem;
+    gap: 0.38rem;
   }
 
   .catalogLayout {
@@ -242,7 +327,7 @@
   }
 
   .sectionGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.75rem;
   }
 }

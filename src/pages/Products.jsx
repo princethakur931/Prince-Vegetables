@@ -1,13 +1,23 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import ProductCarousel from '../components/ProductCarousel';
 import { useCatalog } from '../context/CatalogContext';
+import banner1Image from '../assets/banner1.png';
+import banner2Image from '../assets/banner2.png';
 import styles from './Products.module.css';
+
+const AD_BANNER_ASPECT_RATIO = '1536 / 547';
+const AD_BANNERS = [banner1Image, banner2Image];
+const BANNER_SWAP_MS = 3200;
 
 const Products = () => {
   const { sections, sectionOrder, resolveImageRef, searchQuery } = useCatalog();
   const [selectedSections, setSelectedSections] = useState(sectionOrder);
+  const [activeBannerIndex, setActiveBannerIndex] = useState(0);
+  const [isBannerPaused, setIsBannerPaused] = useState(false);
+  const activeBanner = AD_BANNERS[activeBannerIndex];
 
   useEffect(() => {
     setSelectedSections((previous) => {
@@ -17,6 +27,34 @@ const Products = () => {
       return matches ? previous : sectionOrder;
     });
   }, [sectionOrder]);
+
+  useEffect(() => {
+    if (isBannerPaused || AD_BANNERS.length <= 1) {
+      return undefined;
+    }
+
+    const timerId = window.setInterval(() => {
+      setActiveBannerIndex((previous) => (previous + 1) % AD_BANNERS.length);
+    }, BANNER_SWAP_MS);
+
+    return () => {
+      window.clearInterval(timerId);
+    };
+  }, [isBannerPaused]);
+
+  const showBanner = (nextIndex) => {
+    setActiveBannerIndex(nextIndex < 0 ? AD_BANNERS.length - 1 : nextIndex >= AD_BANNERS.length ? 0 : nextIndex);
+  };
+
+  const showPreviousBanner = () => {
+    setIsBannerPaused(false);
+    setActiveBannerIndex((previous) => (previous - 1 + AD_BANNERS.length) % AD_BANNERS.length);
+  };
+
+  const showNextBanner = () => {
+    setIsBannerPaused(false);
+    setActiveBannerIndex((previous) => (previous + 1) % AD_BANNERS.length);
+  };
 
   const allSelected = selectedSections.length === sectionOrder.length;
 
@@ -71,15 +109,59 @@ const Products = () => {
     <div className={styles.productsPage}>
       <div className={styles.header}>
         <motion.div
-          className={styles.titleSection}
+          className={styles.adSection}
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
+          onMouseEnter={() => setIsBannerPaused(true)}
+          onMouseLeave={() => setIsBannerPaused(false)}
+          onFocusCapture={() => setIsBannerPaused(true)}
+          onBlurCapture={() => setIsBannerPaused(false)}
         >
-          <h1 className={styles.pageTitle}>From farm to your kitchen</h1>
-          <p className={styles.pageSubtitle}>
-            Browse category-wise vegetables with filters and discover your everyday essentials quickly.
-          </p>
+          <div className={styles.bannerFrame} style={{ '--banner-aspect-ratio': AD_BANNER_ASPECT_RATIO }}>
+            <button
+              type="button"
+              className={`${styles.bannerNavButton} ${styles.bannerNavLeft}`}
+              onClick={showPreviousBanner}
+              aria-label="Previous banner"
+            >
+              <ChevronLeft size={18} />
+            </button>
+
+            <AnimatePresence mode="wait">
+              <motion.img
+                key={activeBanner}
+                src={activeBanner}
+                alt="Prince Vegetables offer banner"
+                className={styles.bannerImage}
+                initial={{ opacity: 0, x: 36, scale: 1.01 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -36, scale: 0.99 }}
+                transition={{ duration: 0.56, ease: [0.22, 1, 0.36, 1] }}
+              />
+            </AnimatePresence>
+
+            <button
+              type="button"
+              className={`${styles.bannerNavButton} ${styles.bannerNavRight}`}
+              onClick={showNextBanner}
+              aria-label="Next banner"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+
+          <div className={styles.bannerDots} aria-label="Banner navigation">
+            {AD_BANNERS.map((banner, index) => (
+              <button
+                key={banner}
+                type="button"
+                className={`${styles.bannerDot} ${index === activeBannerIndex ? styles.bannerDotActive : ''}`}
+                onClick={() => showBanner(index)}
+                aria-label={`Go to banner ${index + 1}`}
+              />
+            ))}
+          </div>
         </motion.div>
       </div>
 
@@ -106,7 +188,11 @@ const Products = () => {
             </label>
           ))}
 
-          <button type="button" className={styles.resetButton} onClick={() => setSelectedSections(sectionOrder)}>
+          <button
+            type="button"
+            className={styles.resetButton}
+            onClick={() => setSelectedSections((previous) => (previous.length === sectionOrder.length ? [] : sectionOrder))}
+          >
             Reset Filters
           </button>
         </aside>
