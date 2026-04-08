@@ -8,6 +8,27 @@ import {
 } from '../data/catalogSeed';
 
 const STORAGE_KEY = 'prince-vegitables-catalog-v1';
+const DEFAULT_REMOTE_API_BASE_URL = 'https://prince-vegetables.vercel.app';
+
+const resolveApiUrl = () => {
+  const configuredBaseUrl = import.meta.env.VITE_CATALOG_API_BASE_URL?.trim();
+
+  if (configuredBaseUrl) {
+    return `${configuredBaseUrl.replace(/\/$/, '')}/api/catalog`;
+  }
+
+  if (typeof window !== 'undefined') {
+    const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+
+    if (isLocalHost) {
+      return `${DEFAULT_REMOTE_API_BASE_URL}/api/catalog`;
+    }
+  }
+
+  return '/api/catalog';
+};
+
+const API_URL = resolveApiUrl();
 
 const CatalogContext = createContext(null);
 
@@ -21,13 +42,17 @@ const isTomatoName = (value) => /tomato|tamatar|tomatao/i.test(String(value ?? '
 
 const ensureTomatoImageRef = (name, imageRef) => (isTomatoName(name) ? 'preset:tomato' : imageRef);
 
+const getCatalogPayload = (value) => value?.catalog ?? value;
+
 const normalizeCatalog = (value) => {
-  if (!value || !Array.isArray(value.sections)) {
+  const payload = getCatalogPayload(value);
+
+  if (!payload || !Array.isArray(payload.sections) || payload.sections.length === 0) {
     return { sections: buildDefaultCatalog() };
   }
 
   return {
-    sections: value.sections.map((section) => ({
+    sections: payload.sections.map((section) => ({
       id: section.id,
       title: section.title ?? 'Untitled Section',
       subtitle: section.subtitle ?? '',
@@ -47,7 +72,7 @@ const normalizeCatalog = (value) => {
   };
 };
 
-const loadInitialCatalog = () => {
+const loadCachedCatalog = () => {
   if (typeof window === 'undefined') {
     return { sections: buildDefaultCatalog() };
   }
@@ -65,7 +90,7 @@ const loadInitialCatalog = () => {
   }
 };
 
-const saveCatalog = (catalog) => {
+const saveCachedCatalog = (catalog) => {
   if (typeof window === 'undefined') {
     return;
   }
@@ -73,13 +98,96 @@ const saveCatalog = (catalog) => {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(catalog));
 };
 
+const persistCatalogToApi = async (catalog) => {
+  const response = await fetch(API_URL, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ catalog })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to save catalog: ${response.status}`);
+  }
+};
+
 export const CatalogProvider = ({ children }) => {
-  const [catalog, setCatalog] = useState(loadInitialCatalog);
+  const [catalog, setCatalog] = useState(loadCachedCatalog);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isRemoteAvailable, setIsRemoteAvailable] = useState(false);
 
   useEffect(() => {
-    saveCatalog(catalog);
+    saveCachedCatalog(catalog);
   }, [catalog]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const syncCatalog = async () => {
+      try {
+        const response = await fetch(API_URL, {
+          headers: {
+            Accept: 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const payload = await response.json();
+          const normalizedCatalog = normalizeCatalog(payload);
+
+          if (!cancelled) {
+            setCatalog(normalizedCatalog);
+            saveCachedCatalog(normalizedCatalog);
+            setIsRemoteAvailable(true);
+          }
+
+          return;
+        }
+
+        if (response.status === 404) {
+          const initialCatalog = loadCachedCatalog();
+          await persistCatalogToApi(initialCatalog);
+
+          if (!cancelled) {
+            setIsRemoteAvailable(true);
+          }
+
+          return;
+        }
+      } catch {
+        if (!cancelled) {
+          setIsRemoteAvailable(false);
+        }
+
+        return;
+      }
+
+      if (!cancelled) {
+        setIsRemoteAvailable(false);
+      }
+    };
+
+    void syncCatalog();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isRemoteAvailable) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void persistCatalogToApi(catalog).catch(() => {
+        setIsRemoteAvailable(false);
+      });
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [catalog, isRemoteAvailable]);
 
   const sections = catalog.sections;
   const sectionsById = useMemo(() => Object.fromEntries(sections.map((section) => [section.id, section])), [sections]);
@@ -253,9 +361,10 @@ export const CatalogProvider = ({ children }) => {
       resetCatalog,
       exportCatalog,
       importCatalog,
-      sectionOrderDefault: SECTION_ORDER
+      sectionOrderDefault: SECTION_ORDER,
+      storageStatus: isRemoteAvailable ? 'MongoDB' : 'Local cache'
     };
-  }, [catalog, searchQuery, sections, sectionsById]);
+  }, [catalog, isRemoteAvailable, searchQuery, sections, sectionsById]);
 
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>;
 };

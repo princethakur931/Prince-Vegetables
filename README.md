@@ -99,6 +99,21 @@ npm install
 npm run dev
 ```
 
+### 5️⃣ Connect MongoDB Atlas
+
+Create a `.env` file from `.env.example` and add your MongoDB Atlas connection string. The app uses the `/api/catalog` route on Vercel to read and save the catalog document.
+
+Required variables:
+
+```bash
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/<database>?retryWrites=true&w=majority
+MONGODB_DB=prince_vegetables
+MONGODB_COLLECTION=catalogs
+VITE_CATALOG_API_BASE_URL=https://prince-vegetables.vercel.app
+```
+
+`VITE_CATALOG_API_BASE_URL` is optional on Vercel. For local development, set it to your deployed site URL so local admin edits and live edits both sync to the same MongoDB catalog.
+
 ---
 
 ## 🎯 Purpose of This Project

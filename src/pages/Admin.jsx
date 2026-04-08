@@ -77,6 +77,7 @@ const Admin = () => {
   const {
     sections,
     sectionOrder,
+    storageStatus,
     getSection,
     updateSection,
     addSection,
@@ -313,8 +314,8 @@ const Admin = () => {
             <span>products</span>
           </div>
           <div>
-            <strong>Live</strong>
-            <span>local storage</span>
+              <strong>{storageStatus}</strong>
+              <span>catalog source</span>
           </div>
         </div>
       </div>

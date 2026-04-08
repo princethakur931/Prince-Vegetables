@@ -28,6 +28,18 @@ dist-ssr
 .env.*
 !.env.example
 
+# Sensitive keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+
+# Local cloud/service secrets
+secrets.json
+credentials.json
+
 # Caches and coverage
 coverage
 .eslintcache
