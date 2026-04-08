@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Search, ShoppingBag, Menu, X } from 'lucide-react';
+import { Search, Menu, X } from 'lucide-react';
 import styles from './Navbar.module.css';
 import brandIcon from '../assets/Vibrant vegetable assortment in detail.png';
+import aiBotGif from '../assets/AI Bot.gif';
 import { useCatalog } from '../context/CatalogContext';
 
 const Navbar = () => {
@@ -45,8 +46,7 @@ const Navbar = () => {
           />
         </form>
         <button className={styles.iconButton}>
-          <ShoppingBag size={20} />
-          <span className={styles.badge}>2</span>
+          <img src={aiBotGif} alt="AI assistant" className={styles.actionGifIcon} />
         </button>
         <button
           className={`${styles.iconButton} ${styles.mobileMenu}`}

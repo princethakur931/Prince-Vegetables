@@ -103,21 +103,33 @@
   width: 37px;
   height: 37px;
   border-radius: 50%;
-  border: 1px solid #eee;
+  border: 2px solid #111;
   background: #fff;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
   color: var(--color-text-main);
+  overflow: hidden;
   transition: all 0.2s ease;
 }
 
 .addButton:hover {
-  background: #ef5b45;
-  color: white;
-  border-color: #ef5b45;
+  background: #fff;
+  border-color: #111;
   transform: scale(1.05);
+}
+
+.addButtonGif {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 @media (max-width: 640px) {

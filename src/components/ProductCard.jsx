@@ -1,6 +1,6 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
 import styles from './ProductCard.module.css';
+import aiBotGif from '../assets/AI Bot.gif';
 
 const priceFormatter = new Intl.NumberFormat('en-IN', {
   style: 'currency',
@@ -25,7 +25,7 @@ const ProductCard = ({ product }) => {
         <div className={styles.footer}>
           <span className={styles.price}>{priceFormatter.format(product.price)}</span>
           <button className={styles.addButton}>
-            <Plus size={20} />
+            <img src={aiBotGif} alt="AI assistant" className={styles.addButtonGif} />
           </button>
         </div>
       </div>
