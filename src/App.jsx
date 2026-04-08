@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Admin from './pages/Admin';
 import Home from './pages/Home';
 import Products from './pages/Products';
+import { CatalogProvider } from './context/CatalogContext';
 import appIcon from './assets/Vibrant vegetable assortment in detail.png';
 
 function App() {
@@ -20,13 +22,16 @@ function App() {
   }, []);
 
   return (
-    <Router>
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/products" element={<Products />} />
-      </Routes>
-    </Router>
+    <CatalogProvider>
+      <Router>
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/admin" element={<Admin />} />
+        </Routes>
+      </Router>
+    </CatalogProvider>
   );
 }
 

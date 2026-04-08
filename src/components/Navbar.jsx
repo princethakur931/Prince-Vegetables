@@ -1,13 +1,22 @@
 import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { Search, ShoppingBag, Menu, X } from 'lucide-react';
 import styles from './Navbar.module.css';
 import brandIcon from '../assets/Vibrant vegetable assortment in detail.png';
+import { useCatalog } from '../context/CatalogContext';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+  const { searchQuery, setSearchQuery } = useCatalog();
 
   const closeMenu = () => setIsOpen(false);
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    closeMenu();
+    navigate('/products');
+  };
 
   return (
     <nav className={`${styles.navbar} glass`}>
@@ -26,10 +35,15 @@ const Navbar = () => {
       </div>
 
       <div className={styles.actions}>
-        <div className={styles.searchBar}>
+        <form className={styles.searchBar} onSubmit={handleSearchSubmit}>
           <Search size={18} className={styles.searchIcon} />
-          <input type="text" placeholder="Search for grocery, vegetables..." />
-        </div>
+          <input
+            type="text"
+            placeholder="Search for grocery, vegetables..."
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+          />
+        </form>
         <button className={styles.iconButton}>
           <ShoppingBag size={20} />
           <span className={styles.badge}>2</span>
@@ -44,10 +58,15 @@ const Navbar = () => {
       </div>
 
       <div className={`${styles.mobilePanel} ${isOpen ? styles.mobilePanelOpen : ''}`}>
-        <div className={styles.mobileSearchBar}>
+        <form className={styles.mobileSearchBar} onSubmit={handleSearchSubmit}>
           <Search size={18} className={styles.searchIcon} />
-          <input type="text" placeholder="Search vegetables..." />
-        </div>
+          <input
+            type="text"
+            placeholder="Search vegetables..."
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+          />
+        </form>
 
         <NavLink to="/" onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>Home</NavLink>
         <NavLink to="/products" onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>Shop</NavLink>

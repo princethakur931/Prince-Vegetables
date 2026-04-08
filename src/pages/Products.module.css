@@ -3,7 +3,8 @@
   background: transparent;
   padding: 2rem 0 3rem;
   position: relative;
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 .productsPage::before {
@@ -43,6 +44,7 @@
   gap: 1.4rem;
   position: relative;
   z-index: 2;
+  min-width: 0;
 }
 
 .filterPanel {
@@ -190,10 +192,10 @@
   }
 
   .catalogLayout {
-    width: calc(100% - 1.1rem);
+    width: min(var(--container-max), calc(100% - 1rem));
     grid-template-columns: 1fr;
     gap: 0.9rem;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   .filterPanel {

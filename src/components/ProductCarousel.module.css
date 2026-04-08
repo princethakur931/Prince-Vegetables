@@ -6,23 +6,12 @@
 
 .carousel {
   position: relative;
-  overflow: clip;
+  overflow: hidden;
   border-radius: 1.1rem;
-  padding: 0.25rem 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.18) 100%);
-  border: 1px solid rgba(240, 220, 200, 0.6);
+  padding: 0.2rem 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.48) 0%, rgba(255, 255, 255, 0.2) 100%);
+  border: 1px solid rgba(240, 220, 200, 0.5);
   isolation: isolate;
-}
-
-.carousel::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 3px;
-  background: rgba(255, 249, 241, 0.95);
-  pointer-events: none;
 }
 
 .track {
@@ -39,9 +28,9 @@
 .pageGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.9rem;
+  gap: 0.82rem;
   align-items: stretch;
-  padding: 0.75rem;
+  padding: 0.68rem;
 }
 
 .slide {
@@ -79,18 +68,18 @@
 @media (max-width: 1023px) {
   .pageGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.72rem;
-    padding: 0.62rem;
+    gap: 0.68rem;
+    padding: 0.58rem;
   }
 }
 
 @media (max-width: 640px) {
   .carousel {
-    border-radius: 0.95rem;
+    border-radius: 0.9rem;
   }
 
   .pageGrid {
-    gap: 0.6rem;
-    padding: 0.52rem;
+    gap: 0.56rem;
+    padding: 0.48rem;
   }
 }

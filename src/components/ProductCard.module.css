@@ -21,13 +21,14 @@
 
 .imageWrapper {
   border-radius: var(--radius-md);
-  padding: 0;
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   height: 190px;
   overflow: hidden;
+  background: linear-gradient(180deg, #fffdf8 0%, #fff7ee 100%);
+  border: 1px solid rgba(238, 223, 206, 0.7);
 }
 
 .badge {
@@ -48,14 +49,15 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
   border-radius: inherit;
   position: relative;
   z-index: 1;
-  transition: transform 0.5s ease;
+  transition: transform 0.42s ease;
 }
 
 .card:hover .image {
-  transform: scale(1.08) rotate(3deg);
+  transform: scale(1.04);
 }
 
 .content {

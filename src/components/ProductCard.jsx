@@ -2,10 +2,16 @@ import React from 'react';
 import { Plus } from 'lucide-react';
 import styles from './ProductCard.module.css';
 
+const priceFormatter = new Intl.NumberFormat('en-IN', {
+  style: 'currency',
+  currency: 'INR',
+  maximumFractionDigits: 2
+});
+
 const ProductCard = ({ product }) => {
   return (
     <div className={styles.card}>
-      <div className={styles.imageWrapper} style={{ backgroundColor: product.bgColor }}>
+      <div className={styles.imageWrapper}>
         {product.discount && (
           <div className={styles.badge}>{product.discount}% OFF</div>
         )}
@@ -17,7 +23,7 @@ const ProductCard = ({ product }) => {
           <p className={styles.weight}>{product.weight}</p>
         </div>
         <div className={styles.footer}>
-          <span className={styles.price}>${product.price}</span>
+          <span className={styles.price}>{priceFormatter.format(product.price)}</span>
           <button className={styles.addButton}>
             <Plus size={20} />
           </button>
