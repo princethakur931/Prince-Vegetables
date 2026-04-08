@@ -38,6 +38,11 @@
   aspect-ratio: var(--banner-aspect-ratio, 1536 / 547);
 }
 
+.bannerImageStack {
+  position: absolute;
+  inset: 0;
+}
+
 .bannerImage {
   position: absolute;
   inset: 0;
@@ -48,6 +53,7 @@
   object-position: center;
   background: #fff9f0;
   will-change: transform, opacity;
+  pointer-events: none;
 }
 
 .bannerNavButton {
@@ -72,11 +78,11 @@
 }
 
 .bannerNavLeft {
-  left: 0.6rem;
+  left: 0.2rem;
 }
 
 .bannerNavRight {
-  right: 0.6rem;
+  right: 0.2rem;
 }
 
 .bannerDots {
@@ -264,11 +270,11 @@
   }
 
   .bannerNavLeft {
-    left: 0.45rem;
+    left: 0.15rem;
   }
 
   .bannerNavRight {
-    right: 0.45rem;
+    right: 0.15rem;
   }
 
   .bannerDots {

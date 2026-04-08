@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import ProductCarousel from '../components/ProductCarousel';
@@ -27,6 +27,13 @@ const Products = () => {
       return matches ? previous : sectionOrder;
     });
   }, [sectionOrder]);
+
+  useEffect(() => {
+    AD_BANNERS.forEach((source) => {
+      const image = new Image();
+      image.src = source;
+    });
+  }, []);
 
   useEffect(() => {
     if (isBannerPaused || AD_BANNERS.length <= 1) {
@@ -128,18 +135,19 @@ const Products = () => {
               <ChevronLeft size={18} />
             </button>
 
-            <AnimatePresence mode="wait">
-              <motion.img
-                key={activeBanner}
-                src={activeBanner}
-                alt="Prince Vegetables offer banner"
-                className={styles.bannerImage}
-                initial={{ opacity: 0, x: 36, scale: 1.01 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, x: -36, scale: 0.99 }}
-                transition={{ duration: 0.56, ease: [0.22, 1, 0.36, 1] }}
-              />
-            </AnimatePresence>
+            <div className={styles.bannerImageStack}>
+              {AD_BANNERS.map((banner, index) => (
+                <motion.img
+                  key={banner}
+                  src={banner}
+                  alt="Prince Vegetables offer banner"
+                  className={styles.bannerImage}
+                  initial={false}
+                  animate={{ opacity: index === activeBannerIndex ? 1 : 0, x: index === activeBannerIndex ? 0 : 12 }}
+                  transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                />
+              ))}
+            </div>
 
             <button
               type="button"
