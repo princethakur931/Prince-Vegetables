@@ -278,6 +278,7 @@ const Home = () => {
       </motion.section>
 
       <motion.section
+        id="about"
         className={styles.features}
         variants={featureGrid}
         initial="hidden"

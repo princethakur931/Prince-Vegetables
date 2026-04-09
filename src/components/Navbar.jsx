@@ -31,8 +31,8 @@ const Navbar = () => {
       <div className={styles.navLinks}>
         <NavLink to="/" className={({ isActive }) => isActive ? styles.active : ''}>Home</NavLink>
         <NavLink to="/products" className={({ isActive }) => isActive ? styles.active : ''}>Shop</NavLink>
-        <a href="#about">About</a>
-        <a href="#contact">Contact</a>
+        <a href="/#about">About</a>
+        <NavLink to="/contact" className={({ isActive }) => isActive ? styles.active : ''}>Contact</NavLink>
       </div>
 
       <div className={styles.actions}>
@@ -70,8 +70,8 @@ const Navbar = () => {
 
         <NavLink to="/" onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>Home</NavLink>
         <NavLink to="/products" onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>Shop</NavLink>
-        <a href="#about" onClick={closeMenu}>About</a>
-        <a href="#contact" onClick={closeMenu}>Contact</a>
+        <a href="/#about" onClick={closeMenu}>About</a>
+        <NavLink to="/contact" onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>Contact</NavLink>
       </div>
     </nav>
   );
