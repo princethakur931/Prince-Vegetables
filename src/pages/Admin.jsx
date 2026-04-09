@@ -1,19 +1,17 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   ArrowDown,
   ArrowUp,
-  Download,
+  ChevronLeft,
+  ChevronRight,
   Lock,
   Plus,
-  RefreshCcw,
   Shield,
   Trash2,
-  Upload,
 } from 'lucide-react';
 import styles from './Admin.module.css';
 import {
-  IMAGE_LIBRARY,
   resolveImageRef
 } from '../data/catalogSeed';
 import { useCatalog } from '../context/CatalogContext';
@@ -41,13 +39,6 @@ const ADMIN_AUTH_API_URL = resolveAdminAuthApiUrl();
 
 // Removed LOCAL_DEV_PASSWORD so we don't need double .env variables
 
-const humanizeKey = (key) =>
-  key
-    .replace(/^preset:/, '')
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/[-_]/g, ' ')
-    .replace(/^./, (character) => character.toUpperCase());
-
 const fileToDataUrl = (file) =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -55,8 +46,6 @@ const fileToDataUrl = (file) =>
     reader.onerror = () => reject(new Error('Failed to read file'));
     reader.readAsDataURL(file);
   });
-
-const imageOptions = Object.keys(IMAGE_LIBRARY).map((key) => ({ value: `preset:${key}`, label: humanizeKey(key) }));
 
 const normalizePriceInput = (rawValue) => {
   if (rawValue === '') {
@@ -97,6 +86,7 @@ const Admin = () => {
     sections,
     sectionOrder,
     storageStatus,
+    adBanners,
     getSection,
     updateSection,
     addSection,
@@ -106,9 +96,9 @@ const Admin = () => {
     updateProduct,
     removeProduct,
     moveProduct,
-    resetCatalog,
-    exportCatalog,
-    importCatalog
+    updateAdBanner,
+    addAdBanner,
+    removeAdBanner
   } = useCatalog();
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [accessKey, setAccessKey] = useState('');
@@ -117,7 +107,16 @@ const Admin = () => {
   const [selectedSectionId, setSelectedSectionId] = useState('');
   const [priceDrafts, setPriceDrafts] = useState({});
   const [offerDrafts, setOfferDrafts] = useState({});
-  const importInputRef = useRef(null);
+  const [adEditorOffset, setAdEditorOffset] = useState(0);
+  const getLastAdEditorOffset = () => {
+    const bannerCount = adBanners?.length ?? 0;
+
+    if (bannerCount <= 2) {
+      return 0;
+    }
+
+    return Math.floor((bannerCount - 1) / 2) * 2;
+  };
 
   useEffect(() => {
     if (!selectedSectionId && sections.length > 0) {
@@ -151,6 +150,34 @@ const Admin = () => {
       return Object.keys(next).length === Object.keys(previous).length ? previous : next;
     });
   }, [sections]);
+
+  useEffect(() => {
+    if (isUnlocked) {
+      return undefined;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const navbar = document.getElementById('main-navbar');
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    if (navbar) navbar.style.display = 'none';
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      if (navbar) navbar.style.display = '';
+    };
+  }, [isUnlocked]);
+
+  useEffect(() => {
+    const lastOffset = getLastAdEditorOffset();
+
+    if (adEditorOffset > lastOffset) {
+      setAdEditorOffset(lastOffset);
+    }
+  }, [adBanners, adEditorOffset]);
 
   const totalProducts = useMemo(
     () => sections.reduce((total, section) => total + section.items.length, 0),
@@ -211,38 +238,30 @@ const Admin = () => {
     }
   };
 
-  const lockAgain = () => {
-    setIsUnlocked(false);
-    setAccessKey('');
-    setAuthError('');
-  };
-
-  const downloadCatalog = () => {
-    const blob = new Blob([exportCatalog()], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = 'prince-vegetables-catalog.json';
-    anchor.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImport = async (event) => {
-    const file = event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
-    const text = await file.text();
-    importCatalog(JSON.parse(text));
-    event.target.value = '';
-  };
-
   const handleSectionCreate = () => {
     const nextSectionId = addSection();
     setSelectedSectionId(nextSectionId);
   };
+
+  const handleAdBannerUpload = async (bannerIndex, file) => {
+    if (!file) {
+      return;
+    }
+
+    const dataUrl = await fileToDataUrl(file);
+    updateAdBanner(bannerIndex, dataUrl);
+  };
+
+  const showPreviousAdEditorPage = () => {
+    setAdEditorOffset((previous) => Math.max(0, previous - 2));
+  };
+
+  const showNextAdEditorPage = () => {
+    const lastOffset = getLastAdEditorOffset();
+    setAdEditorOffset((previous) => Math.min(lastOffset, previous + 2));
+  };
+
+  const visibleAdBanners = (adBanners ?? []).slice(adEditorOffset, adEditorOffset + 2);
 
   const handleProductFileUpload = async (sectionId, productId, file) => {
     if (!file) {
@@ -334,13 +353,10 @@ const Admin = () => {
               placeholder="Enter admin password"
             />
             <button type="submit" className={styles.primaryButton} disabled={isAuthenticating}>
-              Unlock
+              Get access
             </button>
           </form>
           {authError ? <p className={styles.authError}>{authError}</p> : null}
-          <button type="button" className={styles.secondaryButton} onClick={lockAgain}>
-            Clear form
-          </button>
         </motion.div>
       </div>
     );
@@ -354,10 +370,7 @@ const Admin = () => {
             <Shield size={14} />
             Hidden Catalog Console
           </span>
-          <h1>Vegetable catalog control panel</h1>
-          <p>
-            Edit sections, product cards, prices, offers, photos and ordering from one private URL-only panel.
-          </p>
+          <h1>Admin Control Panel</h1>
         </div>
         <div className={styles.heroStats}>
           <div>
@@ -375,82 +388,137 @@ const Admin = () => {
         </div>
       </div>
 
-      <div className={styles.toolbar}>
-        <button type="button" className={styles.primaryButton} onClick={handleSectionCreate}>
-          <Plus size={16} />
-          Add section
-        </button>
-        <button type="button" className={styles.secondaryButton} onClick={downloadCatalog}>
-          <Download size={16} />
-          Export JSON
-        </button>
-        <button type="button" className={styles.secondaryButton} onClick={() => importInputRef.current?.click()}>
-          <Upload size={16} />
-          Import JSON
-        </button>
-        <button type="button" className={styles.secondaryButton} onClick={resetCatalog}>
-          <RefreshCcw size={16} />
-          Reset catalog
-        </button>
-        <button type="button" className={styles.secondaryButton} onClick={lockAgain}>
-          <Lock size={16} />
-          Lock panel
-        </button>
-        <input ref={importInputRef} type="file" accept="application/json" hidden onChange={handleImport} />
-      </div>
+      <section className={`${styles.adEditorCard} glass`}>
+        <div className={styles.panelHeader}>
+          <h2>Shop Advertisement Banners</h2>
+          <div className={styles.adEditorActions}>
+            <span className={styles.statusPill}>Editable</span>
+            <button
+              type="button"
+              className={styles.iconButtonSmall}
+              onClick={showPreviousAdEditorPage}
+              title="Previous banners"
+              disabled={adEditorOffset === 0}
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              type="button"
+              className={styles.iconButtonSmall}
+              onClick={showNextAdEditorPage}
+              title="Next banners"
+              disabled={adEditorOffset + 2 >= (adBanners?.length ?? 0)}
+            >
+              <ChevronRight size={16} />
+            </button>
+            <button type="button" className={styles.iconButtonSmall} onClick={addAdBanner} title="Add new banner slot">
+              <Plus size={16} />
+            </button>
+          </div>
+        </div>
+
+        <div className={styles.adEditorGrid}>
+          {visibleAdBanners.map((banner, localIndex) => {
+            const bannerIndex = adEditorOffset + localIndex;
+
+            return (
+            <article key={`ad-banner-${bannerIndex}`} className={styles.adEditorItem}>
+              <div className={styles.adEditorItemTop}>
+                <span className={styles.adEditorItemLabel}>Banner {bannerIndex + 1}</span>
+                <button
+                  type="button"
+                  className={styles.sectionActionButton}
+                  onClick={() => removeAdBanner(bannerIndex)}
+                  title="Delete banner"
+                  aria-label={`Delete banner ${bannerIndex + 1}`}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              <div className={styles.adPreviewBox}>
+                <img src={banner} alt={`Shop advertisement banner ${bannerIndex + 1}`} />
+              </div>
+              <label>
+                Upload banner {bannerIndex + 1}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => handleAdBannerUpload(bannerIndex, event.target.files?.[0])}
+                />
+              </label>
+            </article>
+            );
+          })}
+          {visibleAdBanners.length === 0 ? (
+            <div className={styles.emptyState}>
+              <p>No banners yet. Use + to add a banner slot.</p>
+            </div>
+          ) : null}
+        </div>
+      </section>
 
       <div className={styles.layout}>
         <aside className={`${styles.sidebar} glass`}>
           <div className={styles.panelHeader}>
-            <h2>Sections</h2>
-            <span>{sectionOrder.length}</span>
+            <div className={styles.panelTitleGroup}>
+              <h2>Sections</h2>
+              <span>{sectionOrder.length}</span>
+            </div>
+            <button type="button" className={styles.iconButtonSmall} onClick={handleSectionCreate} title="Add new section">
+              <Plus size={16} />
+            </button>
           </div>
 
           <div className={styles.sectionList}>
             {sections.map((section, index) => (
-              <button
-                type="button"
+              <div
                 key={section.id}
                 className={`${styles.sectionItem} ${selectedSectionId === section.id ? styles.sectionItemActive : ''}`}
-                onClick={() => setSelectedSectionId(section.id)}
               >
-                <div>
-                  <strong>{section.title}</strong>
-                  <span>{section.items.length} products</span>
+                <button
+                  type="button"
+                  className={styles.sectionSelectButton}
+                  onClick={() => setSelectedSectionId(section.id)}
+                >
+                  <span className={styles.sectionTag}>{index + 1}</span>
+                  <div>
+                    <strong>{section.title}</strong>
+                    <span className={styles.sectionMeta}>{section.items.length} products</span>
+                  </div>
+                </button>
+                <div className={styles.sectionRowActions}>
+                  <button
+                    type="button"
+                    className={styles.sectionActionButton}
+                    onClick={() => moveSection(section.id, -1)}
+                    aria-label={`Move ${section.title} up`}
+                    title="Move up"
+                    disabled={index === 0}
+                  >
+                    <ArrowUp size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.sectionActionButton}
+                    onClick={() => moveSection(section.id, 1)}
+                    aria-label={`Move ${section.title} down`}
+                    title="Move down"
+                    disabled={index === sections.length - 1}
+                  >
+                    <ArrowDown size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.sectionActionButton}
+                    onClick={() => removeSection(section.id)}
+                    aria-label={`Remove ${section.title}`}
+                    title="Remove section"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
-                <span className={styles.sectionTag}>{index + 1}</span>
-              </button>
+              </div>
             ))}
-          </div>
-
-          <div className={styles.sidebarActions}>
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              disabled={!selectedSection}
-              onClick={() => selectedSection && moveSection(selectedSection.id, -1)}
-            >
-              <ArrowUp size={16} />
-              Move up
-            </button>
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              disabled={!selectedSection}
-              onClick={() => selectedSection && moveSection(selectedSection.id, 1)}
-            >
-              <ArrowDown size={16} />
-              Move down
-            </button>
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              disabled={!selectedSection}
-              onClick={() => selectedSection && removeSection(selectedSection.id)}
-            >
-              <Trash2 size={16} />
-              Remove section
-            </button>
           </div>
         </aside>
 
@@ -592,27 +660,6 @@ const Admin = () => {
                                 {section.title}
                               </option>
                             ))}
-                          </select>
-                        </label>
-
-                        <label>
-                          Photo preset
-                          <select
-                            value={product.imageRef?.startsWith('preset:') ? product.imageRef : 'custom'}
-                            onChange={(event) => {
-                              if (event.target.value === 'custom') {
-                                return;
-                              }
-
-                              updateProduct(selectedSection.id, product.id, { imageRef: event.target.value });
-                            }}
-                          >
-                            {imageOptions.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                            <option value="custom">Custom upload</option>
                           </select>
                         </label>
 

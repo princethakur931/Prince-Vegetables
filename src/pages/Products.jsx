@@ -4,20 +4,20 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import ProductCarousel from '../components/ProductCarousel';
 import { useCatalog } from '../context/CatalogContext';
-import banner1Image from '../assets/banner1.png';
-import banner2Image from '../assets/banner2.png';
 import styles from './Products.module.css';
 
 const AD_BANNER_ASPECT_RATIO = '1536 / 547';
-const AD_BANNERS = [banner1Image, banner2Image];
 const BANNER_SWAP_MS = 3200;
 
 const Products = () => {
-  const { sections, sectionOrder, resolveImageRef, searchQuery } = useCatalog();
+  const { sections, sectionOrder, resolveImageRef, searchQuery, adBanners } = useCatalog();
   const [selectedSections, setSelectedSections] = useState(sectionOrder);
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [isBannerPaused, setIsBannerPaused] = useState(false);
-  const activeBanner = AD_BANNERS[activeBannerIndex];
+  const banners = useMemo(
+    () => (Array.isArray(adBanners) ? adBanners.filter((banner) => typeof banner === 'string' && banner.trim()) : []),
+    [adBanners]
+  );
 
   useEffect(() => {
     setSelectedSections((previous) => {
@@ -29,38 +29,44 @@ const Products = () => {
   }, [sectionOrder]);
 
   useEffect(() => {
-    AD_BANNERS.forEach((source) => {
+    banners.forEach((source) => {
       const image = new Image();
       image.src = source;
     });
-  }, []);
+  }, [banners]);
 
   useEffect(() => {
-    if (isBannerPaused || AD_BANNERS.length <= 1) {
+    if (activeBannerIndex >= banners.length) {
+      setActiveBannerIndex(0);
+    }
+  }, [activeBannerIndex, banners.length]);
+
+  useEffect(() => {
+    if (isBannerPaused || banners.length <= 1) {
       return undefined;
     }
 
     const timerId = window.setInterval(() => {
-      setActiveBannerIndex((previous) => (previous + 1) % AD_BANNERS.length);
+      setActiveBannerIndex((previous) => (previous + 1) % banners.length);
     }, BANNER_SWAP_MS);
 
     return () => {
       window.clearInterval(timerId);
     };
-  }, [isBannerPaused]);
+  }, [banners.length, isBannerPaused]);
 
   const showBanner = (nextIndex) => {
-    setActiveBannerIndex(nextIndex < 0 ? AD_BANNERS.length - 1 : nextIndex >= AD_BANNERS.length ? 0 : nextIndex);
+    setActiveBannerIndex(nextIndex < 0 ? banners.length - 1 : nextIndex >= banners.length ? 0 : nextIndex);
   };
 
   const showPreviousBanner = () => {
     setIsBannerPaused(false);
-    setActiveBannerIndex((previous) => (previous - 1 + AD_BANNERS.length) % AD_BANNERS.length);
+    setActiveBannerIndex((previous) => (previous - 1 + banners.length) % banners.length);
   };
 
   const showNextBanner = () => {
     setIsBannerPaused(false);
-    setActiveBannerIndex((previous) => (previous + 1) % AD_BANNERS.length);
+    setActiveBannerIndex((previous) => (previous + 1) % banners.length);
   };
 
   const allSelected = selectedSections.length === sectionOrder.length;
@@ -115,62 +121,64 @@ const Products = () => {
   return (
     <div className={styles.productsPage}>
       <div className={styles.header}>
-        <motion.div
-          className={styles.adSection}
-          initial={{ opacity: 0, x: -50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8 }}
-          onMouseEnter={() => setIsBannerPaused(true)}
-          onMouseLeave={() => setIsBannerPaused(false)}
-          onFocusCapture={() => setIsBannerPaused(true)}
-          onBlurCapture={() => setIsBannerPaused(false)}
-        >
-          <div className={styles.bannerFrame} style={{ '--banner-aspect-ratio': AD_BANNER_ASPECT_RATIO }}>
-            <button
-              type="button"
-              className={`${styles.bannerNavButton} ${styles.bannerNavLeft}`}
-              onClick={showPreviousBanner}
-              aria-label="Previous banner"
-            >
-              <ChevronLeft size={18} />
-            </button>
+        {banners.length > 0 ? (
+          <motion.div
+            className={styles.adSection}
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            onMouseEnter={() => setIsBannerPaused(true)}
+            onMouseLeave={() => setIsBannerPaused(false)}
+            onFocusCapture={() => setIsBannerPaused(true)}
+            onBlurCapture={() => setIsBannerPaused(false)}
+          >
+            <div className={styles.bannerFrame} style={{ '--banner-aspect-ratio': AD_BANNER_ASPECT_RATIO }}>
+              <button
+                type="button"
+                className={`${styles.bannerNavButton} ${styles.bannerNavLeft}`}
+                onClick={showPreviousBanner}
+                aria-label="Previous banner"
+              >
+                <ChevronLeft size={18} />
+              </button>
 
-            <div className={styles.bannerImageStack}>
-              {AD_BANNERS.map((banner, index) => (
-                <motion.img
-                  key={banner}
-                  src={banner}
-                  alt="Prince Vegetables offer banner"
-                  className={styles.bannerImage}
-                  initial={false}
-                  animate={{ opacity: index === activeBannerIndex ? 1 : 0, x: index === activeBannerIndex ? 0 : 12 }}
-                  transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+              <div className={styles.bannerImageStack}>
+                {banners.map((banner, index) => (
+                  <motion.img
+                    key={`${banner}-${index}`}
+                    src={banner}
+                    alt="Prince Vegetables offer banner"
+                    className={styles.bannerImage}
+                    initial={false}
+                    animate={{ opacity: index === activeBannerIndex ? 1 : 0, x: index === activeBannerIndex ? 0 : 12 }}
+                    transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                  />
+                ))}
+              </div>
+
+              <button
+                type="button"
+                className={`${styles.bannerNavButton} ${styles.bannerNavRight}`}
+                onClick={showNextBanner}
+                aria-label="Next banner"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+
+            <div className={styles.bannerDots} aria-label="Banner navigation">
+              {banners.map((banner, index) => (
+                <button
+                  key={`${banner}-dot-${index}`}
+                  type="button"
+                  className={`${styles.bannerDot} ${index === activeBannerIndex ? styles.bannerDotActive : ''}`}
+                  onClick={() => showBanner(index)}
+                  aria-label={`Go to banner ${index + 1}`}
                 />
               ))}
             </div>
-
-            <button
-              type="button"
-              className={`${styles.bannerNavButton} ${styles.bannerNavRight}`}
-              onClick={showNextBanner}
-              aria-label="Next banner"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-
-          <div className={styles.bannerDots} aria-label="Banner navigation">
-            {AD_BANNERS.map((banner, index) => (
-              <button
-                key={banner}
-                type="button"
-                className={`${styles.bannerDot} ${index === activeBannerIndex ? styles.bannerDotActive : ''}`}
-                onClick={() => showBanner(index)}
-                aria-label={`Go to banner ${index + 1}`}
-              />
-            ))}
-          </div>
-        </motion.div>
+          </motion.div>
+        ) : null}
       </div>
 
       <motion.div

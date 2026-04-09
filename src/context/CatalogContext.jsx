@@ -3,6 +3,7 @@ import {
   buildDefaultCatalog,
   createEmptyProduct,
   createEmptySection,
+  DEFAULT_AD_BANNERS,
   resolveImageRef,
   SECTION_ORDER
 } from '../data/catalogSeed';
@@ -44,14 +45,24 @@ const ensureTomatoImageRef = (name, imageRef) => (isTomatoName(name) ? 'preset:t
 
 const getCatalogPayload = (value) => value?.catalog ?? value;
 
+const normalizeAdBanners = (value) => {
+  if (!Array.isArray(value)) {
+    return [...DEFAULT_AD_BANNERS];
+  }
+
+  const normalized = value.filter((item) => typeof item === 'string' && item.trim());
+  return normalized.length > 0 ? normalized : [...DEFAULT_AD_BANNERS];
+};
+
 const normalizeCatalog = (value) => {
   const payload = getCatalogPayload(value);
 
   if (!payload || !Array.isArray(payload.sections) || payload.sections.length === 0) {
-    return { sections: buildDefaultCatalog() };
+    return { sections: buildDefaultCatalog(), adBanners: [...DEFAULT_AD_BANNERS] };
   }
 
   return {
+    adBanners: normalizeAdBanners(payload.adBanners),
     sections: payload.sections.map((section) => ({
       id: section.id,
       title: section.title ?? 'Untitled Section',
@@ -74,19 +85,19 @@ const normalizeCatalog = (value) => {
 
 const loadCachedCatalog = () => {
   if (typeof window === 'undefined') {
-    return { sections: buildDefaultCatalog() };
+    return { sections: buildDefaultCatalog(), adBanners: [...DEFAULT_AD_BANNERS] };
   }
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
 
     if (!raw) {
-      return { sections: buildDefaultCatalog() };
+      return { sections: buildDefaultCatalog(), adBanners: [...DEFAULT_AD_BANNERS] };
     }
 
     return normalizeCatalog(JSON.parse(raw));
   } catch {
-    return { sections: buildDefaultCatalog() };
+    return { sections: buildDefaultCatalog(), adBanners: [...DEFAULT_AD_BANNERS] };
   }
 };
 
@@ -190,11 +201,13 @@ export const CatalogProvider = ({ children }) => {
   }, [catalog, isRemoteAvailable]);
 
   const sections = catalog.sections;
+  const adBanners = catalog.adBanners;
   const sectionsById = useMemo(() => Object.fromEntries(sections.map((section) => [section.id, section])), [sections]);
 
   const value = useMemo(() => {
     const updateSection = (sectionId, updates) => {
       setCatalog((previous) => ({
+        ...previous,
         sections: previous.sections.map((section) =>
           section.id === sectionId ? { ...section, ...updates } : section
         )
@@ -203,7 +216,7 @@ export const CatalogProvider = ({ children }) => {
 
     const addSection = () => {
       const newSection = createEmptySection();
-      setCatalog((previous) => ({ sections: [...previous.sections, newSection] }));
+      setCatalog((previous) => ({ ...previous, sections: [...previous.sections, newSection] }));
       return newSection.id;
     };
 
@@ -213,7 +226,7 @@ export const CatalogProvider = ({ children }) => {
           return previous;
         }
 
-        return { sections: previous.sections.filter((section) => section.id !== sectionId) };
+        return { ...previous, sections: previous.sections.filter((section) => section.id !== sectionId) };
       });
     };
 
@@ -229,13 +242,14 @@ export const CatalogProvider = ({ children }) => {
         const sectionsCopy = cloneCatalog(previous.sections);
         const [movedSection] = sectionsCopy.splice(currentIndex, 1);
         sectionsCopy.splice(nextIndex, 0, movedSection);
-        return { sections: sectionsCopy };
+        return { ...previous, sections: sectionsCopy };
       });
     };
 
     const addProduct = (sectionId) => {
       const newProduct = createEmptyProduct();
       setCatalog((previous) => ({
+        ...previous,
         sections: previous.sections.map((section) =>
           section.id === sectionId ? { ...section, items: [...section.items, newProduct] } : section
         )
@@ -273,6 +287,7 @@ export const CatalogProvider = ({ children }) => {
 
         if (targetSectionId === sectionId) {
           return {
+            ...previous,
             sections: previous.sections.map((section) =>
               section.id === sectionId
                 ? {
@@ -296,12 +311,13 @@ export const CatalogProvider = ({ children }) => {
           return section;
         });
 
-        return { sections: nextSections };
+        return { ...previous, sections: nextSections };
       });
     };
 
     const removeProduct = (sectionId, productId) => {
       setCatalog((previous) => ({
+        ...previous,
         sections: previous.sections.map((section) =>
           section.id === sectionId
             ? { ...section, items: section.items.filter((item) => item.id !== productId) }
@@ -312,6 +328,7 @@ export const CatalogProvider = ({ children }) => {
 
     const moveProduct = (sectionId, productId, direction) => {
       setCatalog((previous) => ({
+        ...previous,
         sections: previous.sections.map((section) => {
           if (section.id !== sectionId) {
             return section;
@@ -332,7 +349,50 @@ export const CatalogProvider = ({ children }) => {
       }));
     };
 
-    const resetCatalog = () => setCatalog({ sections: buildDefaultCatalog() });
+    const updateAdBanner = (index, bannerUrl) => {
+      if (!bannerUrl || typeof bannerUrl !== 'string') {
+        return;
+      }
+
+      setCatalog((previous) => {
+        const nextBanners = [...(previous.adBanners ?? DEFAULT_AD_BANNERS)];
+        nextBanners[index] = bannerUrl;
+        return { ...previous, adBanners: nextBanners };
+      });
+    };
+
+    const addAdBanner = () => {
+      setCatalog((previous) => {
+        const currentBanners = Array.isArray(previous.adBanners)
+          ? previous.adBanners
+          : [...DEFAULT_AD_BANNERS];
+        const fallbackBanner = currentBanners[currentBanners.length - 1] ?? DEFAULT_AD_BANNERS[0];
+
+        return {
+          ...previous,
+          adBanners: [...currentBanners, fallbackBanner]
+        };
+      });
+    };
+
+    const removeAdBanner = (index) => {
+      setCatalog((previous) => {
+        const currentBanners = Array.isArray(previous.adBanners)
+          ? previous.adBanners
+          : [...DEFAULT_AD_BANNERS];
+
+        if (index < 0 || index >= currentBanners.length) {
+          return previous;
+        }
+
+        return {
+          ...previous,
+          adBanners: currentBanners.filter((_, bannerIndex) => bannerIndex !== index)
+        };
+      });
+    };
+
+    const resetCatalog = () => setCatalog({ sections: buildDefaultCatalog(), adBanners: [...DEFAULT_AD_BANNERS] });
 
     const exportCatalog = () => JSON.stringify(catalog, null, 2);
 
@@ -343,6 +403,7 @@ export const CatalogProvider = ({ children }) => {
     return {
       catalog,
       sections,
+      adBanners,
       sectionsById,
       sectionOrder: sections.map((section) => section.id),
       searchQuery,
@@ -358,13 +419,16 @@ export const CatalogProvider = ({ children }) => {
       updateProduct,
       removeProduct,
       moveProduct,
+      updateAdBanner,
+      addAdBanner,
+      removeAdBanner,
       resetCatalog,
       exportCatalog,
       importCatalog,
       sectionOrderDefault: SECTION_ORDER,
       storageStatus: isRemoteAvailable ? 'MongoDB' : 'Local cache'
     };
-  }, [catalog, isRemoteAvailable, searchQuery, sections, sectionsById]);
+  }, [adBanners, catalog, isRemoteAvailable, searchQuery, sections, sectionsById]);
 
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>;
 };

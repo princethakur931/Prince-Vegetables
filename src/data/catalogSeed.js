@@ -20,6 +20,8 @@ import beansImg from '../assets/Fresh green beans on beige surface.png';
 import gawarBeansImg from '../assets/Fresh green beans on slate background.png';
 import cucumberImg from '../assets/Fresh cucumber with slices on green.png';
 import radishImg from '../assets/Fresh daikon radish and slices.png';
+import banner1Image from '../assets/banner1.png';
+import banner2Image from '../assets/banner2.png';
 
 export const SECTION_ORDER = [
   'daily-essentials',
@@ -155,6 +157,8 @@ export const DEFAULT_DAILY_BESTSELLERS = [
   'Coriander Leaves (Dhaniya Patta)',
   'Lemon (Nimbu)'
 ];
+
+export const DEFAULT_AD_BANNERS = [banner1Image, banner2Image];
 
 export const IMAGE_LIBRARY = {
   carrot: carrotImg,

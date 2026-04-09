@@ -20,7 +20,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className={`${styles.navbar} glass`}>
+    <nav id="main-navbar" className={`${styles.navbar} glass`}>
       <div className={styles.logo}>
         <NavLink to="/" onClick={closeMenu} className={styles.brandLink}>
           <img src={brandIcon} alt="Prince Vegetables" className={styles.brandLogo} />
