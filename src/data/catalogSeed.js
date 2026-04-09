@@ -160,6 +160,11 @@ export const DEFAULT_DAILY_BESTSELLERS = [
 
 export const DEFAULT_AD_BANNERS = [banner1Image, banner2Image];
 
+const BANNER_LIBRARY = {
+  banner1: banner1Image,
+  banner2: banner2Image
+};
+
 export const IMAGE_LIBRARY = {
   carrot: carrotImg,
   capsicum: capsicumImg,
@@ -275,6 +280,26 @@ export const resolveImageRef = (imageRef) => {
   }
 
   return imageRef;
+};
+
+export const resolveAdBannerRef = (bannerRef) => {
+  if (!bannerRef || typeof bannerRef !== 'string') {
+    return DEFAULT_AD_BANNERS[0];
+  }
+
+  const normalized = bannerRef.trim();
+  const lowerCaseValue = normalized.toLowerCase();
+
+  // Legacy data stored absolute source paths that are not publicly served in production.
+  if (lowerCaseValue.includes('/src/assets/banner1.png') || lowerCaseValue.endsWith('/banner1.png')) {
+    return BANNER_LIBRARY.banner1;
+  }
+
+  if (lowerCaseValue.includes('/src/assets/banner2.png') || lowerCaseValue.endsWith('/banner2.png')) {
+    return BANNER_LIBRARY.banner2;
+  }
+
+  return normalized;
 };
 
 export const createEmptyProduct = () => ({

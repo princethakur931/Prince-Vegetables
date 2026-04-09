@@ -4,6 +4,7 @@ import {
   createEmptyProduct,
   createEmptySection,
   DEFAULT_AD_BANNERS,
+  resolveAdBannerRef,
   resolveImageRef,
   SECTION_ORDER
 } from '../data/catalogSeed';
@@ -50,7 +51,10 @@ const normalizeAdBanners = (value) => {
     return [...DEFAULT_AD_BANNERS];
   }
 
-  const normalized = value.filter((item) => typeof item === 'string' && item.trim());
+  const normalized = value
+    .filter((item) => typeof item === 'string' && item.trim())
+    .map((item) => resolveAdBannerRef(item));
+
   return normalized.length > 0 ? normalized : [...DEFAULT_AD_BANNERS];
 };
 
