@@ -79,6 +79,7 @@
     width: 100%;
     padding: 1rem;
     margin-right: 0;
+    margin-bottom: clamp(1.25rem, 6vh, 3.5rem);
   }
 
   .authField .primaryButton {
@@ -704,26 +705,73 @@
 
   .productGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.6rem;
+    gap: 0.55rem;
   }
 
   .productCard {
-    padding: 0.75rem;
+    padding: 0.62rem;
   }
 
   .productTopRow {
-    margin-bottom: 0.55rem;
-    gap: 0.45rem;
+    margin-bottom: 0.45rem;
+    gap: 0.35rem;
+    flex-wrap: nowrap;
+    align-items: flex-start;
   }
 
   .productTopRow strong {
-    font-size: 1rem;
+    font-size: 0.88rem;
     line-height: 1.2;
+    flex: 1;
+    min-width: 0;
   }
 
   .moveButtons button {
-    width: 30px;
-    height: 30px;
+    width: 27px;
+    height: 27px;
+    padding: 0;
+  }
+
+  .moveButtons {
+    margin-left: 0;
+    gap: 0.22rem;
+    flex-shrink: 0;
+  }
+
+  .productLayout {
+    gap: 0.55rem;
+  }
+
+  .previewBox {
+    min-height: 96px;
+    padding: 0.45rem;
+  }
+
+  .productFields {
+    gap: 0.5rem;
+  }
+
+  .productFields label {
+    font-size: 0.76rem;
+    gap: 0.25rem;
+  }
+
+  .productFields input,
+  .productFields select,
+  .productFields textarea {
+    padding: 0.5rem 0.55rem;
+    border-radius: 0.65rem;
+    font-size: 0.76rem;
+  }
+
+  .productFields select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 1.55rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2366523f' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.52rem center;
+    background-size: 0.75rem;
   }
 
   .productsHeader {
