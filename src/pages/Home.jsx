@@ -122,7 +122,7 @@ const AnimatedStatValue = ({ value, label, prefix = '', suffix = '' }) => {
 const Home = () => {
   const navigate = useNavigate();
   const { scrollY } = useScroll();
-  const y1 = useTransform(scrollY, [0, 1000], [0, 200]);
+  const y1 = useTransform(scrollY, [0, 1000], [0, 70]);
   const [isMobile, setIsMobile] = useState(false);
   const { getSection } = useCatalog();
 
@@ -242,7 +242,7 @@ const Home = () => {
             src={heroBg} 
             alt="Fresh Organic Vegetables" 
             className={styles.heroImage}
-            animate={{ y: isMobile ? [0, -7, 0] : [0, -15, 0] }}
+            animate={{ y: isMobile ? [0, -6, 0] : [0, -10, 0] }}
             transition={{ repeat: Infinity, duration: isMobile ? 4.8 : 6, ease: 'easeInOut' }}
           />
         </motion.div>
