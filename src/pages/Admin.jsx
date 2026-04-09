@@ -11,16 +11,35 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
 import styles from './Admin.module.css';
 import {
   IMAGE_LIBRARY,
   resolveImageRef
 } from '../data/catalogSeed';
 import { useCatalog } from '../context/CatalogContext';
+const DEFAULT_REMOTE_API_BASE_URL = 'https://prince-vegetables.vercel.app';
 
-const ADMIN_KEY = 'prince-garden-2026';
-const ACCESS_STORAGE_KEY = 'princeVegAdminAccess';
+const resolveAdminAuthApiUrl = () => {
+  const configuredBaseUrl = import.meta.env.VITE_CATALOG_API_BASE_URL?.trim();
+
+  if (configuredBaseUrl) {
+    return `${configuredBaseUrl.replace(/\/$/, '')}/api/admin-auth`;
+  }
+
+  if (typeof window !== 'undefined') {
+    const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+
+    if (isLocalHost) {
+      return `${DEFAULT_REMOTE_API_BASE_URL}/api/admin-auth`;
+    }
+  }
+
+  return '/api/admin-auth';
+};
+
+const ADMIN_AUTH_API_URL = resolveAdminAuthApiUrl();
+
+// Removed LOCAL_DEV_PASSWORD so we don't need double .env variables
 
 const humanizeKey = (key) =>
   key
@@ -91,22 +110,14 @@ const Admin = () => {
     exportCatalog,
     importCatalog
   } = useCatalog();
-  const [searchParams] = useSearchParams();
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [accessKey, setAccessKey] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [selectedSectionId, setSelectedSectionId] = useState('');
   const [priceDrafts, setPriceDrafts] = useState({});
   const [offerDrafts, setOfferDrafts] = useState({});
   const importInputRef = useRef(null);
-
-  useEffect(() => {
-    const queryKey = searchParams.get('key');
-    const savedAccess = window.localStorage.getItem(ACCESS_STORAGE_KEY);
-
-    if (queryKey === ADMIN_KEY || savedAccess === 'true') {
-      setIsUnlocked(true);
-    }
-  }, [searchParams]);
 
   useEffect(() => {
     if (!selectedSectionId && sections.length > 0) {
@@ -147,20 +158,63 @@ const Admin = () => {
   );
 
   const selectedSection = selectedSectionId ? getSection(selectedSectionId) : sections[0];
-  const unlock = () => {
-    if (accessKey.trim() === ADMIN_KEY) {
-      window.localStorage.setItem(ACCESS_STORAGE_KEY, 'true');
-      setIsUnlocked(true);
+
+  const unlock = async (event) => {
+    event.preventDefault();
+
+    if (!accessKey.trim() || isAuthenticating) {
       return;
     }
 
-    setAccessKey('');
+    setAuthError('');
+    setIsAuthenticating(true);
+
+    // Local fallback: verify against dynamically injected dev password (only visible in dev mode)
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-undef
+      if (__DEV_ADMIN_PASSWORD__ && accessKey.trim() === __DEV_ADMIN_PASSWORD__) {
+        setIsUnlocked(true);
+      } else {
+        setAuthError('Invalid password for localhost.');
+        setAccessKey('');
+      }
+      setIsAuthenticating(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(ADMIN_AUTH_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ password: accessKey })
+      });
+
+      if (!response.ok) {
+        if (response.status >= 500) {
+          setAuthError('Admin auth service is not configured correctly. Please check Vercel env variables.');
+          setAccessKey('');
+          return;
+        }
+
+        setAuthError('Invalid password. Please try again.');
+        setAccessKey('');
+        return;
+      }
+
+      setIsUnlocked(true);
+    } catch {
+      setAuthError('Unable to verify password right now. Please try again.');
+    } finally {
+      setIsAuthenticating(false);
+    }
   };
 
   const lockAgain = () => {
-    window.localStorage.removeItem(ACCESS_STORAGE_KEY);
     setIsUnlocked(false);
     setAccessKey('');
+    setAuthError('');
   };
 
   const downloadCatalog = () => {
@@ -270,21 +324,22 @@ const Admin = () => {
           </div>
           <h1>Admin Panel</h1>
           <p>
-            Enter the admin key or open the page with <span>?key=your-key</span> to unlock the catalog editor.
+            Enter your admin password to unlock the catalog editor.
           </p>
-          <div className={styles.authField}>
+          <form className={styles.authField} onSubmit={unlock}>
             <input
               type="password"
               value={accessKey}
               onChange={(event) => setAccessKey(event.target.value)}
-              placeholder="Enter admin key"
+              placeholder="Enter admin password"
             />
-            <button type="button" className={styles.primaryButton} onClick={unlock}>
+            <button type="submit" className={styles.primaryButton} disabled={isAuthenticating}>
               Unlock
             </button>
-          </div>
+          </form>
+          {authError ? <p className={styles.authError}>{authError}</p> : null}
           <button type="button" className={styles.secondaryButton} onClick={lockAgain}>
-            Clear saved access
+            Clear form
           </button>
         </motion.div>
       </div>

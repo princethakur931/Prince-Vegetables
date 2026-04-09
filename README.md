@@ -110,9 +110,15 @@ MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/<database>?retryWr
 MONGODB_DB=prince_vegetables
 MONGODB_COLLECTION=catalogs
 VITE_CATALOG_API_BASE_URL=https://prince-vegetables.vercel.app
+VITE_ADMIN_PANEL_PATH=/admin
+ADMIN_PANEL_PASSWORD=replace_with_strong_password
 ```
 
 `VITE_CATALOG_API_BASE_URL` is optional on Vercel. For local development, set it to your deployed site URL so local admin edits and live edits both sync to the same MongoDB catalog.
+
+`VITE_ADMIN_PANEL_PATH` controls which route renders the admin panel (for example `/internal-admin`).
+
+`ADMIN_PANEL_PASSWORD` is verified on the server through `/api/admin-auth`, so the password is not bundled in frontend code.
 
 ---
 
