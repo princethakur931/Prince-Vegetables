@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Admin from './pages/Admin';
 import Home from './pages/Home';
@@ -38,6 +38,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/products" element={<Products />} />
+          <Route path="/contact" element={<Navigate to="/#about" replace />} />
           <Route path={ADMIN_PANEL_PATH} element={<Admin />} />
         </Routes>
       </Router>
