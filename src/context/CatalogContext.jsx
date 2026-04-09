@@ -4,11 +4,12 @@ import {
   createEmptyProduct,
   createEmptySection,
   DEFAULT_AD_BANNERS,
+  normalizeBannerRef,
+  resolveBannerRef,
   resolveImageRef,
   SECTION_ORDER
 } from '../data/catalogSeed';
 
-const STORAGE_KEY = 'prince-vegitables-catalog-v1';
 const DEFAULT_REMOTE_API_BASE_URL = 'https://prince-vegetables.vercel.app';
 
 const resolveApiUrl = () => {
@@ -50,7 +51,10 @@ const normalizeAdBanners = (value) => {
     return [...DEFAULT_AD_BANNERS];
   }
 
-  const normalized = value.filter((item) => typeof item === 'string' && item.trim());
+  const normalized = value
+    .map((item) => normalizeBannerRef(item))
+    .filter((item) => typeof item === 'string' && item.trim());
+
   return normalized.length > 0 ? normalized : [...DEFAULT_AD_BANNERS];
 };
 
@@ -83,32 +87,6 @@ const normalizeCatalog = (value) => {
   };
 };
 
-const loadCachedCatalog = () => {
-  if (typeof window === 'undefined') {
-    return { sections: buildDefaultCatalog(), adBanners: [...DEFAULT_AD_BANNERS] };
-  }
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-
-    if (!raw) {
-      return { sections: buildDefaultCatalog(), adBanners: [...DEFAULT_AD_BANNERS] };
-    }
-
-    return normalizeCatalog(JSON.parse(raw));
-  } catch {
-    return { sections: buildDefaultCatalog(), adBanners: [...DEFAULT_AD_BANNERS] };
-  }
-};
-
-const saveCachedCatalog = (catalog) => {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(catalog));
-};
-
 const persistCatalogToApi = async (catalog) => {
   const response = await fetch(API_URL, {
     method: 'PUT',
@@ -124,13 +102,9 @@ const persistCatalogToApi = async (catalog) => {
 };
 
 export const CatalogProvider = ({ children }) => {
-  const [catalog, setCatalog] = useState(loadCachedCatalog);
+  const [catalog, setCatalog] = useState({ sections: buildDefaultCatalog(), adBanners: [...DEFAULT_AD_BANNERS] });
   const [searchQuery, setSearchQuery] = useState('');
   const [isRemoteAvailable, setIsRemoteAvailable] = useState(false);
-
-  useEffect(() => {
-    saveCachedCatalog(catalog);
-  }, [catalog]);
 
   useEffect(() => {
     let cancelled = false;
@@ -149,7 +123,6 @@ export const CatalogProvider = ({ children }) => {
 
           if (!cancelled) {
             setCatalog(normalizedCatalog);
-            saveCachedCatalog(normalizedCatalog);
             setIsRemoteAvailable(true);
           }
 
@@ -157,10 +130,11 @@ export const CatalogProvider = ({ children }) => {
         }
 
         if (response.status === 404) {
-          const initialCatalog = loadCachedCatalog();
+          const initialCatalog = { sections: buildDefaultCatalog(), adBanners: [...DEFAULT_AD_BANNERS] };
           await persistCatalogToApi(initialCatalog);
 
           if (!cancelled) {
+            setCatalog(initialCatalog);
             setIsRemoteAvailable(true);
           }
 
@@ -411,6 +385,7 @@ export const CatalogProvider = ({ children }) => {
       getSection: (sectionId) => sectionsById[sectionId],
       getSectionIndex: (sectionId) => sections.findIndex((section) => section.id === sectionId),
       resolveImageRef,
+      resolveBannerRef,
       updateSection,
       addSection,
       removeSection,
@@ -426,7 +401,7 @@ export const CatalogProvider = ({ children }) => {
       exportCatalog,
       importCatalog,
       sectionOrderDefault: SECTION_ORDER,
-      storageStatus: isRemoteAvailable ? 'MongoDB' : 'Local cache'
+      storageStatus: isRemoteAvailable ? 'MongoDB' : 'Remote unavailable'
     };
   }, [adBanners, catalog, isRemoteAvailable, searchQuery, sections, sectionsById]);
 

@@ -96,6 +96,7 @@ const Admin = () => {
     updateProduct,
     removeProduct,
     moveProduct,
+    resolveBannerRef,
     updateAdBanner,
     addAdBanner,
     removeAdBanner
@@ -436,7 +437,7 @@ const Admin = () => {
                 </button>
               </div>
               <div className={styles.adPreviewBox}>
-                <img src={banner} alt={`Shop advertisement banner ${bannerIndex + 1}`} />
+                <img src={resolveBannerRef(banner)} alt={`Shop advertisement banner ${bannerIndex + 1}`} />
               </div>
               <label>
                 Upload banner {bannerIndex + 1}

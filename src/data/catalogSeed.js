@@ -23,6 +23,11 @@ import radishImg from '../assets/Fresh daikon radish and slices.png';
 import banner1Image from '../assets/banner1.png';
 import banner2Image from '../assets/banner2.png';
 
+const BANNER_LIBRARY = {
+  banner1: banner1Image,
+  banner2: banner2Image
+};
+
 export const SECTION_ORDER = [
   'daily-essentials',
   'leafy-greens',
@@ -158,7 +163,7 @@ export const DEFAULT_DAILY_BESTSELLERS = [
   'Lemon (Nimbu)'
 ];
 
-export const DEFAULT_AD_BANNERS = [banner1Image, banner2Image];
+export const DEFAULT_AD_BANNERS = ['banner:banner1', 'banner:banner2'];
 
 export const IMAGE_LIBRARY = {
   carrot: carrotImg,
@@ -183,6 +188,143 @@ export const IMAGE_LIBRARY = {
   gawarBeans: gawarBeansImg,
   cucumber: cucumberImg,
   radish: radishImg
+};
+
+const ASSET_FILE_LIBRARY = {
+  'fresh_carrot_1775370917174.png': carrotImg,
+  'fresh_capsicum_1775370933456.png': capsicumImg,
+  'potato.png': potatoImg,
+  'tomato.png': tomatoImg,
+  'green chili.png': chiliImg,
+  'ginger.png': gingerImg,
+  'garlic bulbs with seasoning and parsley.png': garlicImg,
+  'bright lemon on green backdrop.png': lemonImg,
+  'fresh bunch of cilantro on green background.png': corianderImg,
+  'fresh green cabbage on wood.png': cabbageImg,
+  'fresh cauliflower on rustic wood.png': cauliflowerImg,
+  'fresh desi palak on burlap cloth.png': palakImg,
+  'fresh okra with star-shaped seeds.png': okraImg,
+  'fresh eggplant on soft purple background.png': brinjalImg,
+  'fresh red onion and sliced beauty.png': onionImg,
+  'vibrant beetroot against soft pink backdrop.png': beetrootImg,
+  'fresh green peas on wooden surface.png': peasImg,
+  'fresh green lettuce on wooden surface.png': lettuceImg,
+  'fresh green beans on beige surface.png': beansImg,
+  'fresh green beans on slate background.png': gawarBeansImg,
+  'fresh cucumber with slices on green.png': cucumberImg,
+  'fresh daikon radish and slices.png': radishImg,
+  'banner1.png': banner1Image,
+  'banner2.png': banner2Image
+};
+
+const normalizeAssetPath = (value) => {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  const normalized = value.trim();
+
+  if (!normalized) {
+    return '';
+  }
+
+  return normalized
+    .replace(/^https?:\/\/[^/]+/i, '')
+    .replace(/^\.?\/?src\/assets\//i, '')
+    .replace(/^\/?assets\//i, '')
+    .trim();
+};
+
+const resolveKnownAsset = (value) => {
+  const assetPath = normalizeAssetPath(value);
+
+  if (!assetPath) {
+    return null;
+  }
+
+  const fileName = assetPath.split('/').pop() ?? '';
+  const key = decodeURIComponent(fileName.split('?')[0].split('#')[0]).toLowerCase();
+  if (ASSET_FILE_LIBRARY[key]) {
+    return ASSET_FILE_LIBRARY[key];
+  }
+
+  // Support Vite hashed assets like banner1-ABC123xy.png persisted in remote catalog.
+  const dehashedKey = key.replace(/-[a-z0-9_]{6,}(?=\.[a-z0-9]+$)/i, '');
+  return ASSET_FILE_LIBRARY[dehashedKey] ?? null;
+};
+
+const isExternalOrInlineImage = (value) =>
+  /^data:image\//i.test(value) ||
+  /^blob:/i.test(value) ||
+  /^https?:\/\//i.test(value) ||
+  /^\/assets\//i.test(value) ||
+  /^assets\//i.test(value);
+
+export const normalizeBannerRef = (value) => {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return '';
+  }
+
+  if (trimmed.startsWith('banner:')) {
+    return BANNER_LIBRARY[trimmed.replace('banner:', '')] ? trimmed : '';
+  }
+
+  const knownAsset = resolveKnownAsset(trimmed);
+
+  if (knownAsset === banner1Image) {
+    return 'banner:banner1';
+  }
+
+  if (knownAsset === banner2Image) {
+    return 'banner:banner2';
+  }
+
+  const bareName = trimmed.toLowerCase();
+
+  if (bareName === 'banner1' || bareName === 'banner1.png') {
+    return 'banner:banner1';
+  }
+
+  if (bareName === 'banner2' || bareName === 'banner2.png') {
+    return 'banner:banner2';
+  }
+
+  if (!isExternalOrInlineImage(trimmed)) {
+    return '';
+  }
+
+  return trimmed;
+};
+
+export const resolveBannerRef = (value) => {
+  const normalized = normalizeBannerRef(value);
+
+  if (!normalized) {
+    return banner1Image;
+  }
+
+  if (normalized.startsWith('banner:')) {
+    const key = normalized.replace('banner:', '');
+    return BANNER_LIBRARY[key] ?? banner1Image;
+  }
+
+  const knownAsset = resolveKnownAsset(normalized);
+
+  if (knownAsset) {
+    return knownAsset;
+  }
+
+  if (!isExternalOrInlineImage(normalized)) {
+    return banner1Image;
+  }
+
+  return normalized;
 };
 
 const pickImageKey = (name, sectionKey) => {
@@ -267,6 +409,12 @@ export const buildDefaultCatalog = () =>
 export const resolveImageRef = (imageRef) => {
   if (!imageRef) {
     return IMAGE_LIBRARY.carrot;
+  }
+
+  const knownAsset = resolveKnownAsset(imageRef);
+
+  if (knownAsset) {
+    return knownAsset;
   }
 
   if (imageRef.startsWith('preset:')) {

@@ -10,7 +10,7 @@ const AD_BANNER_ASPECT_RATIO = '1536 / 547';
 const BANNER_SWAP_MS = 3200;
 
 const Products = () => {
-  const { sections, sectionOrder, resolveImageRef, searchQuery, adBanners } = useCatalog();
+  const { sections, sectionOrder, resolveBannerRef, resolveImageRef, searchQuery, adBanners } = useCatalog();
   const [selectedSections, setSelectedSections] = useState(sectionOrder);
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [isBannerPaused, setIsBannerPaused] = useState(false);
@@ -18,6 +18,7 @@ const Products = () => {
     () => (Array.isArray(adBanners) ? adBanners.filter((banner) => typeof banner === 'string' && banner.trim()) : []),
     [adBanners]
   );
+  const bannerSources = useMemo(() => banners.map((banner) => resolveBannerRef(banner)), [banners, resolveBannerRef]);
 
   useEffect(() => {
     setSelectedSections((previous) => {
@@ -29,44 +30,44 @@ const Products = () => {
   }, [sectionOrder]);
 
   useEffect(() => {
-    banners.forEach((source) => {
+    bannerSources.forEach((source) => {
       const image = new Image();
       image.src = source;
     });
-  }, [banners]);
+  }, [bannerSources]);
 
   useEffect(() => {
-    if (activeBannerIndex >= banners.length) {
+    if (activeBannerIndex >= bannerSources.length) {
       setActiveBannerIndex(0);
     }
-  }, [activeBannerIndex, banners.length]);
+  }, [activeBannerIndex, bannerSources.length]);
 
   useEffect(() => {
-    if (isBannerPaused || banners.length <= 1) {
+    if (isBannerPaused || bannerSources.length <= 1) {
       return undefined;
     }
 
     const timerId = window.setInterval(() => {
-      setActiveBannerIndex((previous) => (previous + 1) % banners.length);
+      setActiveBannerIndex((previous) => (previous + 1) % bannerSources.length);
     }, BANNER_SWAP_MS);
 
     return () => {
       window.clearInterval(timerId);
     };
-  }, [banners.length, isBannerPaused]);
+  }, [bannerSources.length, isBannerPaused]);
 
   const showBanner = (nextIndex) => {
-    setActiveBannerIndex(nextIndex < 0 ? banners.length - 1 : nextIndex >= banners.length ? 0 : nextIndex);
+    setActiveBannerIndex(nextIndex < 0 ? bannerSources.length - 1 : nextIndex >= bannerSources.length ? 0 : nextIndex);
   };
 
   const showPreviousBanner = () => {
     setIsBannerPaused(false);
-    setActiveBannerIndex((previous) => (previous - 1 + banners.length) % banners.length);
+    setActiveBannerIndex((previous) => (previous - 1 + bannerSources.length) % bannerSources.length);
   };
 
   const showNextBanner = () => {
     setIsBannerPaused(false);
-    setActiveBannerIndex((previous) => (previous + 1) % banners.length);
+    setActiveBannerIndex((previous) => (previous + 1) % bannerSources.length);
   };
 
   const allSelected = selectedSections.length === sectionOrder.length;
@@ -121,7 +122,7 @@ const Products = () => {
   return (
     <div className={styles.productsPage}>
       <div className={styles.header}>
-        {banners.length > 0 ? (
+        {bannerSources.length > 0 ? (
           <motion.div
             className={styles.adSection}
             initial={{ opacity: 0, x: -50 }}
@@ -143,7 +144,7 @@ const Products = () => {
               </button>
 
               <div className={styles.bannerImageStack}>
-                {banners.map((banner, index) => (
+                {bannerSources.map((banner, index) => (
                   <motion.img
                     key={`${banner}-${index}`}
                     src={banner}
@@ -167,7 +168,7 @@ const Products = () => {
             </div>
 
             <div className={styles.bannerDots} aria-label="Banner navigation">
-              {banners.map((banner, index) => (
+              {bannerSources.map((banner, index) => (
                 <button
                   key={`${banner}-dot-${index}`}
                   type="button"
