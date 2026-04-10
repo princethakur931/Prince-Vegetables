@@ -77,6 +77,6 @@ a {
 
 @media (max-width: 640px) {
   body {
-    background: linear-gradient(180deg, #fff8ef 0%, #ffe6cf 100%);
+    background: linear-gradient(180deg, #fff8ef 0%, #fff1dc 60%, #e3f1d8 100%);
   }
 }

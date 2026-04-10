@@ -1,13 +1,14 @@
 .agentPage {
-  min-height: calc(100vh - 5.8rem);
+  height: calc(100dvh - 5.8rem);
   width: min(var(--container-max), calc(100% - 1.8rem));
   margin: 0 auto;
   padding: 0.8rem 0 2.6rem;
+  overflow: hidden;
 }
 
 .chatShell {
   position: relative;
-  height: clamp(620px, calc(100vh - 9rem), 760px);
+  height: 100%;
   min-height: 0;
   border-radius: 1.2rem;
   border: 1px solid rgba(248, 211, 185, 0.86);
@@ -149,6 +150,57 @@
   margin: 0;
 }
 
+.bubble p + p {
+  margin-top: 0.42rem;
+}
+
+.inlineActionLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.38rem 0.72rem;
+  margin-top: 0.2rem;
+  border-radius: 999px;
+  background: rgba(47, 139, 87, 0.1);
+  border: 1px solid rgba(47, 139, 87, 0.18);
+  color: #2f8b57;
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-decoration: none;
+}
+
+.inlineActionLink:hover {
+  background: rgba(47, 139, 87, 0.14);
+  border-color: rgba(47, 139, 87, 0.28);
+}
+
+.contactActionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.7rem;
+}
+
+.contactActionChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.78rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(47, 139, 87, 0.12), rgba(90, 183, 125, 0.16));
+  border: 1px solid rgba(47, 139, 87, 0.24);
+  color: #2a6f47;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-decoration: none;
+  box-shadow: 0 8px 16px rgba(40, 78, 54, 0.08);
+}
+
+.contactActionChip:hover {
+  background: linear-gradient(135deg, rgba(47, 139, 87, 0.16), rgba(90, 183, 125, 0.2));
+  border-color: rgba(47, 139, 87, 0.34);
+}
+
 .messageImageGrid {
   margin-top: 0.55rem;
   display: grid;
@@ -163,6 +215,21 @@
   border-radius: 0.7rem;
   border: 1px solid rgba(218, 227, 214, 0.9);
   background: #f3f7f2;
+}
+
+.imageFallbackCard {
+  min-height: 118px;
+  border-radius: 0.7rem;
+  border: 1px dashed rgba(151, 173, 143, 0.85);
+  background: rgba(241, 248, 237, 0.75);
+  color: #2c6a45;
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0.6rem;
 }
 
 .userBubble {
@@ -269,15 +336,16 @@
 @media (max-width: 820px) {
   .agentPage {
     width: 100%;
-    min-height: calc(100vh - 5.6rem);
+    height: calc(100dvh - 5.6rem);
     margin: 0;
-    padding: 0;
-    background: linear-gradient(165deg, rgba(255, 251, 247, 0.95) 0%, rgba(255, 241, 223, 0.92) 60%, rgba(236, 251, 236, 0.82) 100%);
+    padding: 0 0 max(0.75rem, env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(255, 250, 245, 0.98) 0%, rgba(255, 242, 224, 0.96) 58%, rgba(224, 241, 213, 0.98) 100%);
+    overflow: hidden;
   }
 
   .chatShell {
-    height: calc(100vh - 5.6rem);
-    min-height: calc(100vh - 5.6rem);
+    height: 100%;
+    min-height: 0;
     border-radius: 0;
     border: 0;
     box-shadow: none;
@@ -290,10 +358,11 @@
 
   .chatViewport {
     padding: 0.35rem 0.8rem 0.45rem;
+    overflow-y: auto;
   }
 
   .chatInputWrap {
-    margin: 0.45rem 0.8rem 1rem;
+    margin: 0.45rem 0.8rem 0.95rem;
   }
 
   .bubble {

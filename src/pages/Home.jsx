@@ -211,7 +211,7 @@ const Home = () => {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.6, duration: 0.8 }}
           >
-            <Button onClick={() => navigate('/products')} className={styles.ctaButton}>
+            <Button onClick={() => navigate('/shop')} className={styles.ctaButton}>
               Explore Fresh Picks
             </Button>
           </motion.div>
