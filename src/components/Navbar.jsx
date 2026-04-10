@@ -16,7 +16,7 @@ const Navbar = () => {
   const handleSearchSubmit = (event) => {
     event.preventDefault();
     closeMenu();
-    navigate('/products');
+    navigate('/shop');
   };
 
   return (
@@ -30,7 +30,7 @@ const Navbar = () => {
       
       <div className={styles.navLinks}>
         <NavLink to="/" className={({ isActive }) => isActive ? styles.active : ''}>Home</NavLink>
-        <NavLink to="/products" className={({ isActive }) => isActive ? styles.active : ''}>Shop</NavLink>
+        <NavLink to="/shop" className={({ isActive }) => isActive ? styles.active : ''}>Shop</NavLink>
         <NavLink to="/agent" className={({ isActive }) => isActive ? styles.active : ''}>Agent</NavLink>
         <NavLink to="/contact" className={({ isActive }) => isActive ? styles.active : ''}>Contact</NavLink>
       </div>
@@ -69,7 +69,7 @@ const Navbar = () => {
         </form>
 
         <NavLink to="/" onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>Home</NavLink>
-        <NavLink to="/products" onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>Shop</NavLink>
+        <NavLink to="/shop" onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>Shop</NavLink>
         <NavLink to="/agent" onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>Agent</NavLink>
         <NavLink to="/contact" onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>Contact</NavLink>
       </div>

@@ -31,6 +31,9 @@ const resolveApiUrl = () => {
 };
 
 const API_URL = resolveApiUrl();
+const INLINE_IMAGE_PREFIX = 'data:image/';
+const inlineImageCache = new Map();
+const failedInlineSources = new Set();
 
 const CatalogContext = createContext(null);
 
@@ -87,13 +90,131 @@ const normalizeCatalog = (value) => {
   };
 };
 
+const isInlineImage = (value) =>
+  typeof value === 'string' && value.trim().toLowerCase().startsWith(INLINE_IMAGE_PREFIX);
+
+const blobToDataUrl = (blob) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+        return;
+      }
+
+      reject(new Error('Unable to convert image blob to data URL'));
+    };
+    reader.onerror = () => reject(new Error('Unable to read image blob'));
+    reader.readAsDataURL(blob);
+  });
+
+const inlineImageSource = async (sourceUrl) => {
+  const source = String(sourceUrl ?? '').trim();
+
+  if (!source || isInlineImage(source)) {
+    return source;
+  }
+
+  if (inlineImageCache.has(source)) {
+    return inlineImageCache.get(source);
+  }
+
+  if (failedInlineSources.has(source)) {
+    return '';
+  }
+
+  try {
+    const response = await fetch(source, { cache: 'force-cache' });
+
+    if (!response.ok) {
+      throw new Error(`Image request failed: ${response.status}`);
+    }
+
+    const blob = await response.blob();
+
+    if (!blob.type.startsWith('image/')) {
+      throw new Error('Requested source is not an image');
+    }
+
+    const dataUrl = await blobToDataUrl(blob);
+    inlineImageCache.set(source, dataUrl);
+    return dataUrl;
+  } catch {
+    failedInlineSources.add(source);
+    return '';
+  }
+};
+
+const inlineCatalogMedia = async (catalog) => {
+  if (!catalog || typeof catalog !== 'object') {
+    return catalog;
+  }
+
+  const sections = Array.isArray(catalog.sections) ? catalog.sections : [];
+  const adBanners = Array.isArray(catalog.adBanners) ? catalog.adBanners : [];
+
+  const inlinedSections = await Promise.all(
+    sections.map(async (section) => {
+      const items = Array.isArray(section.items) ? section.items : [];
+
+      const inlinedItems = await Promise.all(
+        items.map(async (item) => {
+          const currentImageRef = item.imageRef ?? item.image ?? '';
+
+          if (isInlineImage(currentImageRef)) {
+            return item;
+          }
+
+          const resolvedImageUrl = resolveImageRef(currentImageRef || 'preset:carrot');
+          const inlinedImage = await inlineImageSource(resolvedImageUrl);
+
+          if (!isInlineImage(inlinedImage)) {
+            return item;
+          }
+
+          return {
+            ...item,
+            imageRef: inlinedImage
+          };
+        })
+      );
+
+      return {
+        ...section,
+        items: inlinedItems
+      };
+    })
+  );
+
+  const inlinedBanners = await Promise.all(
+    adBanners.map(async (bannerRef) => {
+      if (isInlineImage(bannerRef)) {
+        return bannerRef;
+      }
+
+      const resolvedBannerUrl = resolveBannerRef(bannerRef);
+      const inlinedBanner = await inlineImageSource(resolvedBannerUrl);
+
+      return isInlineImage(inlinedBanner) ? inlinedBanner : bannerRef;
+    })
+  );
+
+  return {
+    ...catalog,
+    sections: inlinedSections,
+    adBanners: inlinedBanners
+  };
+};
+
 const persistCatalogToApi = async (catalog) => {
+  const catalogWithInlineMedia = await inlineCatalogMedia(catalog);
+
   const response = await fetch(API_URL, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ catalog })
+    body: JSON.stringify({ catalog: catalogWithInlineMedia })
   });
 
   if (!response.ok) {
