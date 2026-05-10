@@ -12,19 +12,19 @@ import {
 
 const DEFAULT_REMOTE_API_BASE_URL = 'https://prince-vegetables.vercel.app';
 
+const isLocalDevelopment = () => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  return ['localhost', '127.0.0.1'].includes(window.location.hostname);
+};
+
 const resolveApiUrl = () => {
   const configuredBaseUrl = import.meta.env.VITE_CATALOG_API_BASE_URL?.trim();
 
   if (configuredBaseUrl) {
     return `${configuredBaseUrl.replace(/\/$/, '')}/api/catalog`;
-  }
-
-  if (typeof window !== 'undefined') {
-    const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-
-    if (isLocalHost) {
-      return `${DEFAULT_REMOTE_API_BASE_URL}/api/catalog`;
-    }
   }
 
   return '/api/catalog';
@@ -252,11 +252,17 @@ export const CatalogProvider = ({ children }) => {
 
         if (response.status === 404) {
           const initialCatalog = { sections: buildDefaultCatalog(), adBanners: [...DEFAULT_AD_BANNERS] };
-          await persistCatalogToApi(initialCatalog);
 
-          if (!cancelled) {
+          if (!isLocalDevelopment()) {
+            await persistCatalogToApi(initialCatalog);
+
+            if (!cancelled) {
+              setCatalog(initialCatalog);
+              setIsRemoteAvailable(true);
+            }
+          } else if (!cancelled) {
             setCatalog(initialCatalog);
-            setIsRemoteAvailable(true);
+            setIsRemoteAvailable(false);
           }
 
           return;
