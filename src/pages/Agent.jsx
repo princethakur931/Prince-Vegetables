@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { SendHorizontal, Sparkles } from 'lucide-react';
+import { SendHorizontal, Sparkles, Mic } from 'lucide-react';
 import styles from './Agent.module.css';
 import aiBotGif from '../assets/AI Bot.gif';
 import { useCatalog } from '../context/CatalogContext';
@@ -108,6 +108,10 @@ const getFriendlyLinkLabel = (href, fallbackLabel = '') => {
 
   if (candidate.startsWith('mailto:')) {
     return 'Email Now';
+  }
+
+  if (candidate.includes('google.com/maps') || candidate.includes('maps.app.goo.gl')) {
+    return 'Google Maps';
   }
 
   if (candidate === '/' || candidate === '/shop' || candidate === '/products' || candidate === '/agent' || candidate === '/#contact') {
@@ -221,6 +225,9 @@ const renderAssistantText = (text) => {
     ].sort((left, right) => left.index - right.index || left.length - right.length);
 
     for (const match of inlineMatches) {
+      // Skip if this match overlaps with a previous one
+      if (match.index < lastIndex) continue;
+
       const before = line.slice(lastIndex, match.index);
 
       if (before) {
@@ -295,6 +302,7 @@ const Agent = () => {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [hasStartedChat, setHasStartedChat] = useState(false);
   const [typewriterText, setTypewriterText] = useState('');
   const [failedImageUrls, setFailedImageUrls] = useState(() => new Set());
@@ -446,6 +454,40 @@ const Agent = () => {
     }
 
     return payload.reply || payload.message || 'I could not generate a response just now.';
+  };
+
+  const handleMicClick = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Your browser does not support voice input.');
+      return;
+    }
+
+    if (isRecording) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-IN';
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      setIsRecording(true);
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setInputValue((prev) => (prev ? prev + ' ' + transcript : transcript));
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error', event.error);
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognition.start();
   };
 
   const handleSubmit = async (event) => {
@@ -663,9 +705,18 @@ const Agent = () => {
             type="text"
             value={inputValue}
             onChange={(event) => setInputValue(event.target.value)}
-            placeholder="Ask anything..."
+            placeholder={isRecording ? "Listening..." : "Ask anything..."}
             aria-label="Ask Prince AI"
           />
+          <button
+            type="button"
+            className={isRecording ? styles.recordingPulse : ''}
+            onClick={handleMicClick}
+            aria-label="Voice input"
+            title="Voice input"
+          >
+            <Mic size={17} />
+          </button>
           <button type="submit" aria-label="Send message">
             <SendHorizontal size={17} />
           </button>
