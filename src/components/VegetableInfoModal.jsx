@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUpRight, BadgeInfo, Globe2, HeartPulse, Leaf, Languages, Sparkles, X, Volume2 } from 'lucide-react';
+import { ArrowUpRight, BadgeInfo, Globe2, HeartPulse, Leaf, Languages, Sparkles, X, Volume2, Bot } from 'lucide-react';
 import styles from './VegetableInfoModal.module.css';
 import { MODAL_TRANSLATIONS, SUPPORTED_LANGUAGES, getVegetableInfo } from '../data/vegetableInfo';
 
 const VegetableInfoModal = ({ product, isOpen, onClose }) => {
+  const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentUtterance, setCurrentUtterance] = useState(null);
@@ -147,6 +149,12 @@ const VegetableInfoModal = ({ product, isOpen, onClose }) => {
     onClose();
   };
 
+  const handleGetMoreInfo = () => {
+    handleCloseClick();
+    const vegName = product?.name || info.displayTitle;
+    navigate(`/agent?query=Give me detailed information about ${encodeURIComponent(vegName)} including calories, proteins, descriptions, health benefits, advantages, disadvantages, etc in a beautiful way.`);
+  };
+
   if (!isOpen || typeof document === 'undefined') {
     return null;
   }
@@ -241,10 +249,10 @@ const VegetableInfoModal = ({ product, isOpen, onClose }) => {
                 ))}
               </div>
 
-              <a className={styles.googleButton} href={info.googleImagesUrl} target="_blank" rel="noreferrer">
-                <Globe2 size={15} /> {copy.googleImages}
+              <button className={styles.aiButton} onClick={handleGetMoreInfo} type="button">
+                <Bot size={15} /> Get more info via AI
                 <ArrowUpRight size={14} />
-              </a>
+              </button>
             </aside>
 
             <div className={styles.rightPane}>

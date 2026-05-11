@@ -293,6 +293,28 @@
   transform: translateY(-1px);
 }
 
+.aiButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  padding: 0.78rem 1rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  text-decoration: none;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 12px 26px rgba(16, 185, 129, 0.22);
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.aiButton:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+
 .rightPane {
   display: flex;
   flex-direction: column;

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { SendHorizontal, Sparkles, Mic } from 'lucide-react';
 import styles from './Agent.module.css';
@@ -298,6 +299,7 @@ const getAssistantContactActions = (text, hintText = '') => {
 };
 
 const Agent = () => {
+  const location = useLocation();
   const { sections, adBanners, sectionOrder, storageStatus, resolveImageRef, resolveBannerRef } = useCatalog();
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
@@ -307,6 +309,23 @@ const Agent = () => {
   const [typewriterText, setTypewriterText] = useState('');
   const [failedImageUrls, setFailedImageUrls] = useState(() => new Set());
   const scrollerRef = useRef(null);
+  const querySentRef = useRef(false);
+
+  // Allow passing query via url to automatically start chat
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const query = params.get('query');
+    
+    // Automatically trigger send message ONLY once per session using querySentRef
+    if (query && !querySentRef.current && messages.length === 0) {
+      querySentRef.current = true;
+      // Strip URL query to avoid triggering again on browser refresh
+      window.history.replaceState({}, document.title, location.pathname);
+      
+      // Use setTimeout so the initial render completes
+      setTimeout(() => sendMessage(query), 10);
+    }
+  }, [location.search, messages.length]);
 
   const shouldShowWelcome = useMemo(() => !hasStartedChat && messages.length === 0, [hasStartedChat, messages.length]);
   const catalogImageIndex = useMemo(
@@ -430,7 +449,8 @@ const Agent = () => {
 
   const callAgentApi = async (conversationMessages) => {
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 12000);
+    // Allow up to 45 seconds for heavy AI generation like detailed stats
+    const timeoutId = window.setTimeout(() => controller.abort(), 45000);
 
     const response = await fetch('/api/agent', {
       method: 'POST',
@@ -490,13 +510,9 @@ const Agent = () => {
     recognition.start();
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
-    const nextMessage = inputValue.trim();
-    if (!nextMessage) {
-      return;
-    }
+  const sendMessage = async (messageText) => {
+    const nextMessage = messageText.trim();
+    if (!nextMessage) return;
 
     const userMessage = {
       id: `${Date.now()}-user`,
@@ -505,7 +521,6 @@ const Agent = () => {
     };
 
     setMessages((previous) => [...previous, userMessage]);
-    setInputValue('');
     setHasStartedChat(true);
     setIsTyping(true);
 
@@ -525,7 +540,7 @@ const Agent = () => {
         text: assistantReply,
       };
 
-      setMessages((previous) => [...previous, assistantMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       const assistantMessage = {
         id: `${Date.now()}-assistant-error`,
@@ -533,11 +548,19 @@ const Agent = () => {
         text: error instanceof Error ? error.message : 'The AI assistant is temporarily unavailable. Please try again.',
       };
 
-      setMessages((previous) => [...previous, assistantMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
     } finally {
       setIsTyping(false);
       window.requestAnimationFrame(scrollToBottom);
     }
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!inputValue.trim()) return;
+    const textToSend = inputValue;
+    setInputValue('');
+    sendMessage(textToSend);
   };
 
   const markImageAsFailed = (imageUrl) => {
