@@ -109,7 +109,7 @@ const createAgentProxyPlugin = (env) => {
               model,
               messages,
               stream: false,
-              max_tokens: 260,
+              max_tokens: 700,
               temperature: 0.55
             })
           })

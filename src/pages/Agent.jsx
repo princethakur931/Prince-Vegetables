@@ -14,6 +14,7 @@ const SYSTEM_PROMPT = [
   'If the user asks about a specific vegetable, suggest the most relevant category or shopping tip.',
   'If the user asks for image/photo/pic, mention the exact vegetable names clearly so matching images can be shown in chat.',
   'When the user asks for WhatsApp, call, email, or any page/section link, use the exact links from websiteContext.contactPage.contactDetails and websiteContext.pageLinks.',
+  'Do not print raw URLs unless the user explicitly asks for them; prefer short natural-language contact replies.',
 ].join(' ');
 
 const WELCOME_HEADING = 'Hello! How Can I Help You Today?';
@@ -59,6 +60,14 @@ const CONTACT_ACTIONS = [
     keywords: ['gmail', 'email', 'mail', 'inbox']
   }
 ];
+
+const CONTACT_ROW_LABELS = {
+  whatsapp: 'WhatsApp',
+  call: 'Phone',
+  gmail: 'Email'
+};
+
+const CONTACT_ROW_ORDER = ['whatsapp', 'call', 'gmail'];
 
 const sanitizeUrl = (url) =>
   String(url ?? '')
@@ -298,6 +307,55 @@ const getAssistantContactActions = (text, hintText = '') => {
   return CONTACT_ACTIONS.filter((action) => action.keywords.some((keyword) => source.includes(keyword)));
 };
 
+const stripContactDetails = (text) => {
+  const source = String(text ?? '');
+
+  return source
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter((line) => {
+      const lower = line.toLowerCase();
+
+      if (!line) return false;
+
+      if (lower.startsWith('phone:') || lower.startsWith('whatsapp:') || lower.startsWith('email:')) {
+        return false;
+      }
+
+      if (lower.includes('mailto:') || lower.includes('tel:') || lower.includes('wa.me') || lower.includes('whatsapp')) {
+        return false;
+      }
+
+      return true;
+    })
+    .join('\n')
+    .trim();
+};
+
+const ContactActionCard = ({ actions }) => (
+  <div className={styles.contactActionCard}>
+    {CONTACT_ROW_ORDER.filter((key) => actions.some((action) => action.key === key)).map((key) => {
+      const action = actions.find((entry) => entry.key === key);
+
+      if (!action) return null;
+
+      return (
+        <div key={action.key} className={styles.contactActionRow}>
+          <span className={styles.contactActionLabel}>{CONTACT_ROW_LABELS[action.key] ?? action.key}</span>
+          <a
+            href={action.href}
+            target={action.href.startsWith('http') ? '_blank' : undefined}
+            rel={action.href.startsWith('http') ? 'noreferrer' : undefined}
+            className={styles.contactActionChip}
+          >
+            {action.label}
+          </a>
+        </div>
+      );
+    })}
+  </div>
+);
+
 const Agent = () => {
   const location = useLocation();
   const { sections, adBanners, sectionOrder, storageStatus, resolveImageRef, resolveBannerRef } = useCatalog();
@@ -308,7 +366,16 @@ const Agent = () => {
   const [hasStartedChat, setHasStartedChat] = useState(false);
   const [typewriterText, setTypewriterText] = useState('');
   const [failedImageUrls, setFailedImageUrls] = useState(() => new Set());
+
   const scrollerRef = useRef(null);
+  const textareaRef = useRef(null);
+  
+  const resetTextareaHeight = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+    }
+  };
   const querySentRef = useRef(false);
 
   // Allow passing query via url to automatically start chat
@@ -327,6 +394,12 @@ const Agent = () => {
     }
   }, [location.search, messages.length]);
 
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSubmit(event);
+    }
+  };
   const shouldShowWelcome = useMemo(() => !hasStartedChat && messages.length === 0, [hasStartedChat, messages.length]);
   const catalogImageIndex = useMemo(
     () =>
@@ -523,6 +596,9 @@ const Agent = () => {
     setMessages((previous) => [...previous, userMessage]);
     setHasStartedChat(true);
     setIsTyping(true);
+      if (textareaRef.current) {
+        textareaRef.current.style.height = '1.8rem';
+      }
 
     window.requestAnimationFrame(scrollToBottom);
 
@@ -658,7 +734,7 @@ const Agent = () => {
                   >
                     {message.role === 'assistant'
                       ? (() => {
-                          const assistantText = stripImageReferences(message.text);
+                          const assistantText = stripContactDetails(stripImageReferences(message.text));
                           const assistantImageUrls = getAssistantImageUrls(message.text, getPreviousUserText(index));
                           const assistantContactActions = getAssistantContactActions(message.text, getPreviousUserText(index));
 
@@ -686,19 +762,7 @@ const Agent = () => {
                                 </div>
                               ) : null}
                               {assistantContactActions.length > 0 ? (
-                                <div className={styles.contactActionRow}>
-                                  {assistantContactActions.map((action) => (
-                                    <a
-                                      key={action.key}
-                                      href={action.href}
-                                      target={action.href.startsWith('http') ? '_blank' : undefined}
-                                      rel={action.href.startsWith('http') ? 'noreferrer' : undefined}
-                                      className={styles.contactActionChip}
-                                    >
-                                      {action.label}
-                                    </a>
-                                  ))}
-                                </div>
+                                <ContactActionCard actions={assistantContactActions} />
                               ) : null}
                             </div>
                           );
@@ -724,12 +788,20 @@ const Agent = () => {
         </div>
 
         <form className={styles.chatInputWrap} onSubmit={handleSubmit}>
-          <input
-            type="text"
+          <textarea
             value={inputValue}
-            onChange={(event) => setInputValue(event.target.value)}
+            onChange={(event) => {
+              setInputValue(event.target.value);
+              // Auto-resize textarea
+              event.target.style.height = 'auto';
+              event.target.style.height = Math.min(event.target.scrollHeight, 120) + 'px';
+            }}
+              onKeyDown={handleKeyDown}
+              ref={textareaRef}
             placeholder={isRecording ? "Listening..." : "Ask anything..."}
             aria-label="Ask Prince AI"
+            rows={1}
+            className={styles.inputTextarea}
           />
           <button
             type="button"
