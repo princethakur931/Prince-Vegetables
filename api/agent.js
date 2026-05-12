@@ -68,6 +68,7 @@ export default async function handler(req, res) {
   const resolvedSystemPrompt = [
     systemPrompt || 'You are a helpful assistant for Prince Vegetables.',
     'Use the following website context as read-only knowledge. Do not claim editing/write access.',
+    'Give complete answers and do not stop halfway through a response.',
     websiteContext
   ]
     .filter((part) => part && part.trim())
@@ -99,7 +100,7 @@ export default async function handler(req, res) {
         model,
         messages,
         stream: false,
-        max_tokens: 260,
+        max_tokens: 700,
         temperature: 0.55
       })
     });
