@@ -11,6 +11,7 @@ import {
 } from '../data/catalogSeed';
 
 const DEFAULT_REMOTE_API_BASE_URL = 'https://prince-vegetables.vercel.app';
+const LOCAL_STORAGE_KEY = 'prince-vegetables-catalog';
 
 const isLocalDevelopment = () => {
   if (typeof window === 'undefined') {
@@ -48,6 +49,36 @@ const isTomatoName = (value) => /tomato|tamatar|tomatao/i.test(String(value ?? '
 const ensureTomatoImageRef = (name, imageRef) => (isTomatoName(name) ? 'preset:tomato' : imageRef);
 
 const getCatalogPayload = (value) => value?.catalog ?? value;
+
+const readLocalCatalog = () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const savedCatalog = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+
+    if (!savedCatalog) {
+      return null;
+    }
+
+    return normalizeCatalog(JSON.parse(savedCatalog));
+  } catch {
+    return null;
+  }
+};
+
+const writeLocalCatalog = (catalog) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(catalog));
+  } catch {
+    // Ignore storage quota or serialization errors.
+  }
+};
 
 const normalizeAdBanners = (value) => {
   if (!Array.isArray(value)) {
@@ -223,7 +254,9 @@ const persistCatalogToApi = async (catalog) => {
 };
 
 export const CatalogProvider = ({ children }) => {
-  const [catalog, setCatalog] = useState({ sections: buildDefaultCatalog(), adBanners: [...DEFAULT_AD_BANNERS] });
+  const [catalog, setCatalog] = useState(() => {
+    return readLocalCatalog() ?? { sections: buildDefaultCatalog(), adBanners: [...DEFAULT_AD_BANNERS] };
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [isRemoteAvailable, setIsRemoteAvailable] = useState(false);
 
@@ -245,6 +278,7 @@ export const CatalogProvider = ({ children }) => {
           if (!cancelled) {
             setCatalog(normalizedCatalog);
             setIsRemoteAvailable(true);
+            writeLocalCatalog(normalizedCatalog);
           }
 
           return;
@@ -259,16 +293,25 @@ export const CatalogProvider = ({ children }) => {
             if (!cancelled) {
               setCatalog(initialCatalog);
               setIsRemoteAvailable(true);
+              writeLocalCatalog(initialCatalog);
             }
           } else if (!cancelled) {
-            setCatalog(initialCatalog);
+            const localCatalog = readLocalCatalog() ?? initialCatalog;
+            setCatalog(localCatalog);
             setIsRemoteAvailable(false);
+            writeLocalCatalog(localCatalog);
           }
 
           return;
         }
       } catch {
         if (!cancelled) {
+          const localCatalog = readLocalCatalog();
+
+          if (localCatalog) {
+            setCatalog(localCatalog);
+          }
+
           setIsRemoteAvailable(false);
         }
 
@@ -288,6 +331,8 @@ export const CatalogProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    writeLocalCatalog(catalog);
+
     if (!isRemoteAvailable) {
       return;
     }
@@ -528,7 +573,7 @@ export const CatalogProvider = ({ children }) => {
       exportCatalog,
       importCatalog,
       sectionOrderDefault: SECTION_ORDER,
-      storageStatus: isRemoteAvailable ? 'MongoDB' : 'Remote unavailable'
+      storageStatus: isRemoteAvailable ? 'MongoDB' : 'Local cache'
     };
   }, [adBanners, catalog, isRemoteAvailable, searchQuery, sections, sectionsById]);
 

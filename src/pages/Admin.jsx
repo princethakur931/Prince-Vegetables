@@ -47,6 +47,32 @@ const fileToDataUrl = (file) =>
     reader.readAsDataURL(file);
   });
 
+const uploadToCloudinary = async (file) => {
+  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+  if (!cloudName || !uploadPreset) {
+    throw new Error('Missing Cloudinary configuration (VITE_CLOUDINARY_CLOUD_NAME or VITE_CLOUDINARY_UPLOAD_PRESET)');
+  }
+
+  const form = new FormData();
+  form.append('file', file);
+  form.append('upload_preset', uploadPreset);
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
+    method: 'POST',
+    body: form
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Cloudinary upload failed: ${res.status} ${text}`);
+  }
+
+  const json = await res.json();
+  return json.secure_url || json.url || '';
+};
+
 const normalizePriceInput = (rawValue) => {
   if (rawValue === '') {
     return '';
@@ -261,12 +287,23 @@ const Admin = () => {
   };
 
   const handleAdBannerUpload = async (bannerIndex, file) => {
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
-    const dataUrl = await fileToDataUrl(file);
-    updateAdBanner(bannerIndex, dataUrl);
+    try {
+      const url = await uploadToCloudinary(file);
+      if (url) updateAdBanner(bannerIndex, url);
+    } catch (err) {
+      // fallback to inline if cloud upload fails
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        updateAdBanner(bannerIndex, dataUrl);
+      } catch {
+        // ignore
+      }
+      // Optionally inform the user
+      // eslint-disable-next-line no-console
+      console.error('Failed to upload banner to Cloudinary', err);
+    }
   };
 
   const showPreviousAdEditorPage = () => {
@@ -281,12 +318,24 @@ const Admin = () => {
   const visibleAdBanners = (adBanners ?? []).slice(adEditorOffset, adEditorOffset + adEditorPageSize);
 
   const handleProductFileUpload = async (sectionId, productId, file) => {
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
-    const dataUrl = await fileToDataUrl(file);
-    updateProduct(sectionId, productId, { imageRef: dataUrl });
+    try {
+      const url = await uploadToCloudinary(file);
+      if (url) {
+        updateProduct(sectionId, productId, { imageRef: url });
+      }
+    } catch (err) {
+      // fallback to inline data URL if upload fails
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        updateProduct(sectionId, productId, { imageRef: dataUrl });
+      } catch {
+        // ignore
+      }
+      // eslint-disable-next-line no-console
+      console.error('Failed to upload product image to Cloudinary', err);
+    }
   };
 
   const handlePriceDraftChange = (sectionId, productId, rawValue) => {
