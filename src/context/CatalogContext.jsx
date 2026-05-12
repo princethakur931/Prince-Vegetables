@@ -11,7 +11,6 @@ import {
 } from '../data/catalogSeed';
 
 const DEFAULT_REMOTE_API_BASE_URL = 'https://prince-vegetables.vercel.app';
-const LOCAL_STORAGE_KEY = 'prince-vegetables-catalog';
 
 const isLocalDevelopment = () => {
   if (typeof window === 'undefined') {
@@ -49,36 +48,6 @@ const isTomatoName = (value) => /tomato|tamatar|tomatao/i.test(String(value ?? '
 const ensureTomatoImageRef = (name, imageRef) => (isTomatoName(name) ? 'preset:tomato' : imageRef);
 
 const getCatalogPayload = (value) => value?.catalog ?? value;
-
-const readLocalCatalog = () => {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  try {
-    const savedCatalog = window.localStorage.getItem(LOCAL_STORAGE_KEY);
-
-    if (!savedCatalog) {
-      return null;
-    }
-
-    return normalizeCatalog(JSON.parse(savedCatalog));
-  } catch {
-    return null;
-  }
-};
-
-const writeLocalCatalog = (catalog) => {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(catalog));
-  } catch {
-    // Ignore storage quota or serialization errors.
-  }
-};
 
 const normalizeAdBanners = (value) => {
   if (!Array.isArray(value)) {
@@ -176,76 +145,13 @@ const inlineImageSource = async (sourceUrl) => {
   }
 };
 
-const inlineCatalogMedia = async (catalog) => {
-  if (!catalog || typeof catalog !== 'object') {
-    return catalog;
-  }
-
-  const sections = Array.isArray(catalog.sections) ? catalog.sections : [];
-  const adBanners = Array.isArray(catalog.adBanners) ? catalog.adBanners : [];
-
-  const inlinedSections = await Promise.all(
-    sections.map(async (section) => {
-      const items = Array.isArray(section.items) ? section.items : [];
-
-      const inlinedItems = await Promise.all(
-        items.map(async (item) => {
-          const currentImageRef = item.imageRef ?? item.image ?? '';
-
-          if (isInlineImage(currentImageRef)) {
-            return item;
-          }
-
-          const resolvedImageUrl = resolveImageRef(currentImageRef || 'preset:carrot');
-          const inlinedImage = await inlineImageSource(resolvedImageUrl);
-
-          if (!isInlineImage(inlinedImage)) {
-            return item;
-          }
-
-          return {
-            ...item,
-            imageRef: inlinedImage
-          };
-        })
-      );
-
-      return {
-        ...section,
-        items: inlinedItems
-      };
-    })
-  );
-
-  const inlinedBanners = await Promise.all(
-    adBanners.map(async (bannerRef) => {
-      if (isInlineImage(bannerRef)) {
-        return bannerRef;
-      }
-
-      const resolvedBannerUrl = resolveBannerRef(bannerRef);
-      const inlinedBanner = await inlineImageSource(resolvedBannerUrl);
-
-      return isInlineImage(inlinedBanner) ? inlinedBanner : bannerRef;
-    })
-  );
-
-  return {
-    ...catalog,
-    sections: inlinedSections,
-    adBanners: inlinedBanners
-  };
-};
-
 const persistCatalogToApi = async (catalog) => {
-  const catalogWithInlineMedia = await inlineCatalogMedia(catalog);
-
   const response = await fetch(API_URL, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ catalog: catalogWithInlineMedia })
+    body: JSON.stringify({ catalog })
   });
 
   if (!response.ok) {
@@ -254,11 +160,10 @@ const persistCatalogToApi = async (catalog) => {
 };
 
 export const CatalogProvider = ({ children }) => {
-  const [catalog, setCatalog] = useState(() => {
-    return readLocalCatalog() ?? { sections: buildDefaultCatalog(), adBanners: [...DEFAULT_AD_BANNERS] };
-  });
+  const [catalog, setCatalog] = useState({ sections: buildDefaultCatalog(), adBanners: [...DEFAULT_AD_BANNERS] });
   const [searchQuery, setSearchQuery] = useState('');
   const [isRemoteAvailable, setIsRemoteAvailable] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('idle');
 
   useEffect(() => {
     let cancelled = false;
@@ -278,7 +183,7 @@ export const CatalogProvider = ({ children }) => {
           if (!cancelled) {
             setCatalog(normalizedCatalog);
             setIsRemoteAvailable(true);
-            writeLocalCatalog(normalizedCatalog);
+            setSaveStatus('saved');
           }
 
           return;
@@ -293,26 +198,20 @@ export const CatalogProvider = ({ children }) => {
             if (!cancelled) {
               setCatalog(initialCatalog);
               setIsRemoteAvailable(true);
-              writeLocalCatalog(initialCatalog);
+              setSaveStatus('saved');
             }
           } else if (!cancelled) {
-            const localCatalog = readLocalCatalog() ?? initialCatalog;
-            setCatalog(localCatalog);
+            setCatalog(initialCatalog);
             setIsRemoteAvailable(false);
-            writeLocalCatalog(localCatalog);
+            setSaveStatus('idle');
           }
 
           return;
         }
       } catch {
         if (!cancelled) {
-          const localCatalog = readLocalCatalog();
-
-          if (localCatalog) {
-            setCatalog(localCatalog);
-          }
-
           setIsRemoteAvailable(false);
+          setSaveStatus('error');
         }
 
         return;
@@ -320,6 +219,7 @@ export const CatalogProvider = ({ children }) => {
 
       if (!cancelled) {
         setIsRemoteAvailable(false);
+        setSaveStatus('error');
       }
     };
 
@@ -331,16 +231,21 @@ export const CatalogProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    writeLocalCatalog(catalog);
-
     if (!isRemoteAvailable) {
       return;
     }
 
+    setSaveStatus('saving');
+
     const timeoutId = window.setTimeout(() => {
-      void persistCatalogToApi(catalog).catch(() => {
-        setIsRemoteAvailable(false);
-      });
+      void persistCatalogToApi(catalog)
+        .then(() => {
+          setSaveStatus('saved');
+        })
+        .catch(() => {
+          setSaveStatus('error');
+          setIsRemoteAvailable(false);
+        });
     }, 300);
 
     return () => window.clearTimeout(timeoutId);
@@ -573,9 +478,10 @@ export const CatalogProvider = ({ children }) => {
       exportCatalog,
       importCatalog,
       sectionOrderDefault: SECTION_ORDER,
-      storageStatus: isRemoteAvailable ? 'MongoDB' : 'Local cache'
+      storageStatus: isRemoteAvailable ? 'MongoDB' : 'Remote unavailable',
+      saveStatus
     };
-  }, [adBanners, catalog, isRemoteAvailable, searchQuery, sections, sectionsById]);
+  }, [adBanners, catalog, isRemoteAvailable, saveStatus, searchQuery, sections, sectionsById]);
 
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>;
 };

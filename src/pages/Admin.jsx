@@ -112,6 +112,7 @@ const Admin = () => {
     sections,
     sectionOrder,
     storageStatus,
+    saveStatus,
     adBanners,
     getSection,
     updateSection,
@@ -228,6 +229,12 @@ const Admin = () => {
   );
 
   const selectedSection = selectedSectionId ? getSection(selectedSectionId) : sections[0];
+  const saveStatusLabel = {
+    idle: 'Idle',
+    saving: 'Saving...',
+    saved: 'Saved',
+    error: 'Save failed'
+  }[saveStatus] ?? 'Idle';
 
   const unlock = async (event) => {
     event.preventDefault();
@@ -446,6 +453,10 @@ const Admin = () => {
           <div>
             <strong>{totalProducts}</strong>
             <span>products</span>
+          </div>
+          <div>
+            <strong>{saveStatusLabel}</strong>
+            <span>last save</span>
           </div>
           <div>
               <strong>{storageStatus}</strong>
