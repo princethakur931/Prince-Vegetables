@@ -14,11 +14,27 @@ const Products = () => {
   const [selectedSections, setSelectedSections] = useState(sectionOrder);
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [isBannerPaused, setIsBannerPaused] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(false);
   const banners = useMemo(
     () => (Array.isArray(adBanners) ? adBanners.filter((banner) => typeof banner === 'string' && banner.trim()) : []),
     [adBanners]
   );
   const bannerSources = useMemo(() => banners.map((banner) => resolveBannerRef(banner)), [banners, resolveBannerRef]);
+
+  useEffect(() => {
+    const mobileQuery = window.matchMedia('(max-width: 768px)');
+
+    const syncViewport = () => {
+      setIsMobileView(mobileQuery.matches);
+    };
+
+    syncViewport();
+    mobileQuery.addEventListener('change', syncViewport);
+
+    return () => {
+      mobileQuery.removeEventListener('change', syncViewport);
+    };
+  }, []);
 
   useEffect(() => {
     setSelectedSections((previous) => {
@@ -229,7 +245,7 @@ const Products = () => {
               <motion.section
                 key={section.id}
                 className={`${styles.sectionBlock} ${section.id === 'salad-picks' ? styles.sectionHighlight : ''}`}
-                initial={{ opacity: 0, y: 30 }}
+                initial={isMobileView ? false : { opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-80px' }}
                 transition={{ duration: 0.45, delay: idx * 0.04 }}

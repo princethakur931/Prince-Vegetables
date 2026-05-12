@@ -12,19 +12,19 @@ import {
 
 const DEFAULT_REMOTE_API_BASE_URL = 'https://prince-vegetables.vercel.app';
 
+const isLocalDevelopment = () => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  return ['localhost', '127.0.0.1'].includes(window.location.hostname);
+};
+
 const resolveApiUrl = () => {
   const configuredBaseUrl = import.meta.env.VITE_CATALOG_API_BASE_URL?.trim();
 
   if (configuredBaseUrl) {
     return `${configuredBaseUrl.replace(/\/$/, '')}/api/catalog`;
-  }
-
-  if (typeof window !== 'undefined') {
-    const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-
-    if (isLocalHost) {
-      return `${DEFAULT_REMOTE_API_BASE_URL}/api/catalog`;
-    }
   }
 
   return '/api/catalog';
@@ -145,76 +145,13 @@ const inlineImageSource = async (sourceUrl) => {
   }
 };
 
-const inlineCatalogMedia = async (catalog) => {
-  if (!catalog || typeof catalog !== 'object') {
-    return catalog;
-  }
-
-  const sections = Array.isArray(catalog.sections) ? catalog.sections : [];
-  const adBanners = Array.isArray(catalog.adBanners) ? catalog.adBanners : [];
-
-  const inlinedSections = await Promise.all(
-    sections.map(async (section) => {
-      const items = Array.isArray(section.items) ? section.items : [];
-
-      const inlinedItems = await Promise.all(
-        items.map(async (item) => {
-          const currentImageRef = item.imageRef ?? item.image ?? '';
-
-          if (isInlineImage(currentImageRef)) {
-            return item;
-          }
-
-          const resolvedImageUrl = resolveImageRef(currentImageRef || 'preset:carrot');
-          const inlinedImage = await inlineImageSource(resolvedImageUrl);
-
-          if (!isInlineImage(inlinedImage)) {
-            return item;
-          }
-
-          return {
-            ...item,
-            imageRef: inlinedImage
-          };
-        })
-      );
-
-      return {
-        ...section,
-        items: inlinedItems
-      };
-    })
-  );
-
-  const inlinedBanners = await Promise.all(
-    adBanners.map(async (bannerRef) => {
-      if (isInlineImage(bannerRef)) {
-        return bannerRef;
-      }
-
-      const resolvedBannerUrl = resolveBannerRef(bannerRef);
-      const inlinedBanner = await inlineImageSource(resolvedBannerUrl);
-
-      return isInlineImage(inlinedBanner) ? inlinedBanner : bannerRef;
-    })
-  );
-
-  return {
-    ...catalog,
-    sections: inlinedSections,
-    adBanners: inlinedBanners
-  };
-};
-
 const persistCatalogToApi = async (catalog) => {
-  const catalogWithInlineMedia = await inlineCatalogMedia(catalog);
-
   const response = await fetch(API_URL, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ catalog: catalogWithInlineMedia })
+    body: JSON.stringify({ catalog })
   });
 
   if (!response.ok) {
@@ -226,6 +163,7 @@ export const CatalogProvider = ({ children }) => {
   const [catalog, setCatalog] = useState({ sections: buildDefaultCatalog(), adBanners: [...DEFAULT_AD_BANNERS] });
   const [searchQuery, setSearchQuery] = useState('');
   const [isRemoteAvailable, setIsRemoteAvailable] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('idle');
 
   useEffect(() => {
     let cancelled = false;
@@ -245,6 +183,7 @@ export const CatalogProvider = ({ children }) => {
           if (!cancelled) {
             setCatalog(normalizedCatalog);
             setIsRemoteAvailable(true);
+            setSaveStatus('saved');
           }
 
           return;
@@ -252,11 +191,19 @@ export const CatalogProvider = ({ children }) => {
 
         if (response.status === 404) {
           const initialCatalog = { sections: buildDefaultCatalog(), adBanners: [...DEFAULT_AD_BANNERS] };
-          await persistCatalogToApi(initialCatalog);
 
-          if (!cancelled) {
+          if (!isLocalDevelopment()) {
+            await persistCatalogToApi(initialCatalog);
+
+            if (!cancelled) {
+              setCatalog(initialCatalog);
+              setIsRemoteAvailable(true);
+              setSaveStatus('saved');
+            }
+          } else if (!cancelled) {
             setCatalog(initialCatalog);
-            setIsRemoteAvailable(true);
+            setIsRemoteAvailable(false);
+            setSaveStatus('idle');
           }
 
           return;
@@ -264,6 +211,7 @@ export const CatalogProvider = ({ children }) => {
       } catch {
         if (!cancelled) {
           setIsRemoteAvailable(false);
+          setSaveStatus('error');
         }
 
         return;
@@ -271,6 +219,7 @@ export const CatalogProvider = ({ children }) => {
 
       if (!cancelled) {
         setIsRemoteAvailable(false);
+        setSaveStatus('error');
       }
     };
 
@@ -286,10 +235,17 @@ export const CatalogProvider = ({ children }) => {
       return;
     }
 
+    setSaveStatus('saving');
+
     const timeoutId = window.setTimeout(() => {
-      void persistCatalogToApi(catalog).catch(() => {
-        setIsRemoteAvailable(false);
-      });
+      void persistCatalogToApi(catalog)
+        .then(() => {
+          setSaveStatus('saved');
+        })
+        .catch(() => {
+          setSaveStatus('error');
+          setIsRemoteAvailable(false);
+        });
     }, 300);
 
     return () => window.clearTimeout(timeoutId);
@@ -522,9 +478,10 @@ export const CatalogProvider = ({ children }) => {
       exportCatalog,
       importCatalog,
       sectionOrderDefault: SECTION_ORDER,
-      storageStatus: isRemoteAvailable ? 'MongoDB' : 'Remote unavailable'
+      storageStatus: isRemoteAvailable ? 'MongoDB' : 'Remote unavailable',
+      saveStatus
     };
-  }, [adBanners, catalog, isRemoteAvailable, searchQuery, sections, sectionsById]);
+  }, [adBanners, catalog, isRemoteAvailable, saveStatus, searchQuery, sections, sectionsById]);
 
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>;
 };
