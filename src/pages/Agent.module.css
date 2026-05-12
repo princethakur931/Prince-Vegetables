@@ -413,7 +413,7 @@
     width: 100%;
     height: calc(100dvh - 5.6rem);
     margin: 0;
-    padding: 0 0 max(0.75rem, env(safe-area-inset-bottom));
+    padding: 0 0 max(0.35rem, env(safe-area-inset-bottom));
     background: linear-gradient(180deg, rgba(255, 250, 245, 0.98) 0%, rgba(255, 242, 224, 0.96) 58%, rgba(224, 241, 213, 0.98) 100%);
     overflow: hidden;
   }
@@ -442,7 +442,7 @@
 
   .chatInputWrap {
     flex-shrink: 0;
-    margin: 0.45rem 0.8rem calc(0.95rem + env(safe-area-inset-bottom));
+    margin: 0.45rem 0.8rem calc(0.4rem + env(safe-area-inset-bottom));
     padding: 0.5rem 0.25rem 0.5rem 0.85rem;
   }
 
