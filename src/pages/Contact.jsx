@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import PageSEO from '../components/PageSEO';
 import styles from './Contact.module.css';
 import storeVisitGif from '../assets/store-visit.gif';
 import whatsappIcon from '../assets/whatsapp.png';
@@ -128,6 +129,7 @@ const Contact = () => {
 
   return (
     <main className={styles.contactPage}>
+      <PageSEO title="Contact Prince Vegetables | Vegetable Delivery" />
       <img src={storeVisitGif} alt="Visit Prince Vegetables" className={styles.visitGif} />
 
       <div className={styles.visitHeadlineWrap} aria-live="polite">
