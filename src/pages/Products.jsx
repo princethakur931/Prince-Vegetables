@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import ProductCarousel from '../components/ProductCarousel';
+import PageSEO from '../components/PageSEO';
 import { useCatalog } from '../context/CatalogContext';
 import styles from './Products.module.css';
 
@@ -137,6 +138,7 @@ const Products = () => {
 
   return (
     <div className={styles.productsPage}>
+      <PageSEO title="Shop Fresh Vegetables | Prince Vegetables" />
       <div className={styles.header}>
         {bannerSources.length > 0 ? (
           <motion.div
