@@ -128,17 +128,6 @@ It can be used as a base for:
 
 ---
 
-## 📸 Preview
-
-> Add your website screenshot here for a more professional GitHub look 📷
-
-Example:
-```md
-![Project Preview](your-image-link-here)
-```
-
----
-
 ## 🌟 Future Improvements
 
 - 🔐 User Login / Signup
