@@ -15,6 +15,7 @@ const Products = () => {
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [isBannerPaused, setIsBannerPaused] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
   const banners = useMemo(
     () => (Array.isArray(adBanners) ? adBanners.filter((banner) => typeof banner === 'string' && banner.trim()) : []),
     [adBanners]
@@ -205,29 +206,44 @@ const Products = () => {
         transition={{ delay: 0.3, duration: 0.8 }}
       >
         <aside className={`${styles.filterPanel} glass`}>
-          <h3 className={styles.filterTitle}>Filter By Section</h3>
-
-          <label className={styles.filterRow}>
-            <input type="checkbox" checked={allSelected} onChange={toggleAllSections} />
-            <span className={styles.filterLabel}>All Vegetables</span>
-            <span className={styles.filterCount}>{allVegetablesCount}</span>
-          </label>
-
-          {catalogSections.map((section) => (
-            <label key={section.id} className={styles.filterRow}>
-              <input type="checkbox" checked={selectedSections.includes(section.id)} onChange={() => toggleSection(section.id)} />
-              <span className={styles.filterLabel}>{section.title}</span>
-              <span className={styles.filterCount}>{section.items.length}</span>
-            </label>
-          ))}
-
           <button
             type="button"
-            className={styles.resetButton}
-            onClick={() => setSelectedSections((previous) => (previous.length === sectionOrder.length ? [] : sectionOrder))}
+            className={styles.filterHeader}
+            onClick={() => setIsFilterExpanded(!isFilterExpanded)}
+            aria-label={isFilterExpanded ? 'Collapse filters' : 'Expand filters'}
+            aria-expanded={isFilterExpanded}
           >
-            Reset Filters
+            <h3 className={styles.filterTitle}>Filter By Section</h3>
+            <span className={styles.filterToggle}>
+              {isFilterExpanded ? '−' : '+'}
+            </span>
           </button>
+
+          {isFilterExpanded && (
+            <>
+              <label className={styles.filterRow}>
+                <input type="checkbox" checked={allSelected} onChange={toggleAllSections} />
+                <span className={styles.filterLabel}>All Vegetables</span>
+                <span className={styles.filterCount}>{allVegetablesCount}</span>
+              </label>
+
+              {catalogSections.map((section) => (
+                <label key={section.id} className={styles.filterRow}>
+                  <input type="checkbox" checked={selectedSections.includes(section.id)} onChange={() => toggleSection(section.id)} />
+                  <span className={styles.filterLabel}>{section.title}</span>
+                  <span className={styles.filterCount}>{section.items.length}</span>
+                </label>
+              ))}
+
+              <button
+                type="button"
+                className={styles.resetButton}
+                onClick={() => setSelectedSections((previous) => (previous.length === sectionOrder.length ? [] : sectionOrder))}
+              >
+                Reset Filters
+              </button>
+            </>
+          )}
         </aside>
 
         <div className={styles.sectionsColumn}>

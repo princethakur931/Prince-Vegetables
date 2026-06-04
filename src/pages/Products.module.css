@@ -130,7 +130,52 @@
 
 .filterTitle {
   font-size: 1rem;
+  margin-bottom: 0;
+  margin: 0;
+}
+
+.filterHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 0.8rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  width: 100%;
+  text-align: left;
+  transition: opacity 0.2s ease;
+}
+
+.filterHeader:hover {
+  opacity: 0.8;
+}
+
+.filterHeader:active {
+  opacity: 0.6;
+}
+
+.filterToggle {
+  font-size: 1.4rem;
+  color: #ef5b45;
+  min-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.filterHeader:hover .filterToggle {
+  transform: scale(1.15);
+}
+
+.filterHeader:active .filterToggle {
+  transform: scale(0.95);
 }
 
 .filterRow {
@@ -303,7 +348,16 @@
   }
 
   .filterTitle {
+    margin-bottom: 0;
+    margin: 0;
+  }
+
+  .filterHeader {
     margin-bottom: 0.3rem;
+  }
+
+  .filterToggle {
+    font-size: 1.2rem;
   }
 
   .resetButton {
