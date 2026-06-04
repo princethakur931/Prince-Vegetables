@@ -33,10 +33,56 @@ const formatWebsiteContext = (value) => {
   }
 }
 
+const normalizeModelId = (rawModel) => {
+  const value = String(rawModel || '').trim()
+
+  if (!value) {
+    return 'moonshotai/kimi-k2'
+  }
+
+  if (value === 'moonshotai/kimi-k2.6-free') {
+    return 'moonshotai/kimi-k2.6:free'
+  }
+
+  return value
+}
+
+const parseFallbackModels = (rawValue) =>
+  String(rawValue || '')
+    .split(',')
+    .map((value) => normalizeModelId(value))
+    .filter((value) => value.length > 0)
+
+const shouldRetryWithFallback = (statusCode, message) => {
+  if (statusCode === 429 || statusCode >= 500) {
+    return true
+  }
+
+  const normalizedMessage = String(message || '').toLowerCase()
+  return normalizedMessage.includes('not available')
+    || normalizedMessage.includes('no endpoints found')
+    || normalizedMessage.includes('no provider')
+    || normalizedMessage.includes('rate limit')
+}
+
 const createAgentProxyPlugin = (env) => {
-  const apiKey = env.LONGCAT_API_KEY
-  const apiBaseUrl = env.LONGCAT_API_BASE_URL || 'https://api.longcat.chat/openai/v1/chat/completions'
-  const model = env.LONGCAT_MODEL || 'LongCat-Flash-Chat'
+  const apiKey = env.OPENROUTER_API_KEY
+  const apiBaseUrl =
+    env.AGENT_API_BASE_URL ||
+    env.OPENROUTER_API_BASE_URL ||
+    'https://openrouter.ai/api/v1/chat/completions'
+  const model = normalizeModelId(
+    env.AGENT_MODEL || env.OPENROUTER_MODEL || 'moonshotai/kimi-k2'
+  )
+  const fallbackModels = parseFallbackModels(
+    env.OPENROUTER_FALLBACK_MODELS || env.AGENT_FALLBACK_MODELS || 'moonshotai/kimi-k2,openai/gpt-4o-mini'
+  )
+  const modelCandidates = [model, ...fallbackModels].filter(
+    (candidate, index, values) => candidate && values.indexOf(candidate) === index
+  )
+  const appSiteUrl = env.OPENROUTER_SITE_URL || env.APP_SITE_URL
+  const appName = env.OPENROUTER_APP_NAME || 'Prince Vegetables'
+  const useOpenRouterHeaders = apiBaseUrl.includes('openrouter.ai')
 
   return {
     name: 'agent-proxy',
@@ -67,7 +113,9 @@ const createAgentProxyPlugin = (env) => {
         if (!apiKey) {
           response.statusCode = 500
           response.setHeader('Content-Type', 'application/json')
-          response.end(JSON.stringify({ message: 'Missing LONGCAT_API_KEY environment variable' }))
+          response.end(JSON.stringify({
+            message: 'Missing API key. Set OPENROUTER_API_KEY.'
+          }))
           return
         }
 
@@ -98,54 +146,109 @@ const createAgentProxyPlugin = (env) => {
         ]
 
         try {
-          const upstreamResponse = await fetch(apiBaseUrl, {
-            method: 'POST',
-            signal: AbortSignal.timeout(15000),
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              model,
-              messages,
-              stream: false,
-              max_tokens: 700,
-              temperature: 0.55
-            })
-          })
+          const headers = {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          }
 
-          const payload = await upstreamResponse.json().catch(() => ({}))
+          if (useOpenRouterHeaders) {
+            if (appSiteUrl) {
+              headers['HTTP-Referer'] = appSiteUrl
+            }
+            if (appName) {
+              headers['X-Title'] = appName
+            }
+          }
 
           response.setHeader('Content-Type', 'application/json')
 
-          if (!upstreamResponse.ok) {
-            response.statusCode = upstreamResponse.status
-            response.end(JSON.stringify({
-              message: payload?.error?.message || payload?.message || 'LongCat API request failed',
-              error: payload?.error || payload
-            }))
-            return
+          let lastError = null
+
+          for (let index = 0; index < modelCandidates.length; index += 1) {
+            const candidateModel = modelCandidates[index]
+
+            try {
+              const upstreamResponse = await fetch(apiBaseUrl, {
+                method: 'POST',
+                signal: AbortSignal.timeout(15000),
+                headers,
+                body: JSON.stringify({
+                  model: candidateModel,
+                  messages,
+                  stream: false,
+                  max_tokens: 700,
+                  temperature: 0.55
+                })
+              })
+
+              const payload = await upstreamResponse.json().catch(() => ({}))
+
+              if (!upstreamResponse.ok) {
+                const providerMessage = payload?.error?.message || payload?.message || 'AI provider request failed'
+                const canRetry = useOpenRouterHeaders
+                  && index < modelCandidates.length - 1
+                  && shouldRetryWithFallback(upstreamResponse.status, providerMessage)
+
+                lastError = {
+                  status: upstreamResponse.status,
+                  message: providerMessage,
+                  error: payload?.error || payload,
+                  model: candidateModel
+                }
+
+                if (canRetry) {
+                  continue
+                }
+
+                response.statusCode = upstreamResponse.status
+                response.end(JSON.stringify({
+                  message: `${providerMessage} (model: ${candidateModel})`,
+                  error: payload?.error || payload,
+                  model: candidateModel
+                }))
+                return
+              }
+
+              const reply = payload?.choices?.[0]?.message?.content
+
+              if (typeof reply !== 'string' || !reply.trim()) {
+                lastError = {
+                  status: 502,
+                  message: 'AI response did not include assistant text',
+                  error: payload,
+                  model: candidateModel
+                }
+                continue
+              }
+
+              response.statusCode = 200
+              response.end(JSON.stringify({
+                reply: reply.trim(),
+                model: payload?.model || candidateModel,
+                usage: payload?.usage || null
+              }))
+              return
+            } catch (attemptError) {
+              lastError = {
+                status: 500,
+                message: attemptError instanceof Error ? attemptError.message : 'Unknown error',
+                error: attemptError instanceof Error ? attemptError.message : attemptError,
+                model: candidateModel
+              }
+            }
           }
 
-          const reply = payload?.choices?.[0]?.message?.content
-
-          if (typeof reply !== 'string' || !reply.trim()) {
-            response.statusCode = 502
-            response.end(JSON.stringify({ message: 'LongCat response did not include assistant text' }))
-            return
-          }
-
-          response.statusCode = 200
+          response.statusCode = lastError?.status || 500
           response.end(JSON.stringify({
-            reply: reply.trim(),
-            model: payload?.model || model,
-            usage: payload?.usage || null
+            message: `${lastError?.message || 'Failed to reach AI provider API'} (model: ${lastError?.model || model})`,
+            error: lastError?.error || null,
+            model: lastError?.model || model
           }))
         } catch (error) {
           response.statusCode = 500
           response.setHeader('Content-Type', 'application/json')
           response.end(JSON.stringify({
-            message: 'Failed to reach LongCat API',
+            message: 'Failed to reach AI provider API',
             error: error instanceof Error ? error.message : 'Unknown error'
           }))
         }
