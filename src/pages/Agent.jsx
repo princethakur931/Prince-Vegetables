@@ -9,8 +9,22 @@ import { useCatalog } from '../context/CatalogContext';
 const SYSTEM_PROMPT = [
   'You are Prince AI Assistant for Prince Vegetables.',
   'Help users with fresh vegetables, availability, shopping guidance, product sections, and general store questions.',
-  'Keep replies very short, friendly, practical, and fast to read.',
-  'Respond in clean plain text only. Do not use markdown symbols like **, *, #, or backticks.',
+  'Write like a real helpful human shop assistant: warm, natural, and conversational.',
+  'Keep the tone friendly and smart like a great chat assistant, not robotic.',
+  'Match the user language automatically (Hindi, Hinglish, or English) and keep wording simple.',
+  'FORMAT RESPONSES IN A CLEAN AND MOBILE-FRIENDLY WAY:',
+  '- Use headings (##, ###) to organize information',
+  '- Use numbered lists when showing categories or steps',
+  '- Use bullet points • for items or features',
+  '- Add relevant emojis (🥬🥕🍅🌿🛒🚚💚) to make it engaging',
+  '- Keep paragraphs short (1-2 lines maximum)',
+  '- Highlight important text using **bold**',
+  '- End with a clear follow-up question',
+  '- Avoid large blocks of text - break it up',
+  'Reply in 3-6 short lines by default, with clear useful detail (not one-liner unless user asks).',
+  'When useful, ask one small follow-up question to continue the conversation naturally.',
+  'If the user asks for price, stock, or section guidance, answer directly first, then suggest next helpful step.',
+  'Use markdown formatting (**, ##, ###, -, numbered lists) for better readability.',
   'If the user asks about a specific vegetable, suggest the most relevant category or shopping tip.',
   'If the user asks for image/photo/pic, mention the exact vegetable names clearly so matching images can be shown in chat.',
   'When the user asks for WhatsApp, call, email, or any page/section link, use the exact links from websiteContext.contactPage.contactDetails and websiteContext.pageLinks.',
@@ -206,7 +220,7 @@ const removeImageTokensFromText = (text) => {
     .trim();
 };
 
-const renderAssistantText = (text) => {
+const parseMarkdownToElements = (text) => {
   const source = stripImageReferences(text);
 
   if (!source) {
@@ -214,47 +228,129 @@ const renderAssistantText = (text) => {
   }
 
   const lines = source.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+  const elements = [];
+  let i = 0;
+  let orderedListItems = [];
 
-  return lines.map((line, lineIndex) => {
-    const nodes = [];
-    let lastIndex = 0;
-    const inlineMatches = [
-      ...Array.from(line.matchAll(LINK_MARKDOWN_REGEX)).map((match) => ({
-        index: match.index ?? 0,
-        length: match[0].length,
-        type: 'link',
-        label: match[1],
-        href: match[2]
-      })),
-      ...Array.from(line.matchAll(RAW_URL_REGEX)).map((match) => ({
-        index: match.index ?? 0,
-        length: match[0].length,
-        type: 'url',
-        value: match[1]
-      }))
-    ].sort((left, right) => left.index - right.index || left.length - right.length);
+  const flushOrderedList = () => {
+    if (orderedListItems.length > 0) {
+      elements.push(
+        <ol key={`ol-flush-${elements.length}`} className={styles.orderedList}>
+          {orderedListItems}
+        </ol>
+      );
+      orderedListItems = [];
+    }
+  };
 
-    for (const match of inlineMatches) {
-      // Skip if this match overlaps with a previous one
-      if (match.index < lastIndex) continue;
+  while (i < lines.length) {
+    const line = lines[i];
 
-      const before = line.slice(lastIndex, match.index);
-
-      if (before) {
-        nodes.push(before.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*\n]+)\*/g, '$1').replace(/`([^`]+)`/g, '$1'));
+    // Check for heading (## or ###)
+    if (line.startsWith('###')) {
+      flushOrderedList();
+      const text = line.replace(/^#+\s*/, '').trim();
+      elements.push(<h3 key={`h3-${i}`} className={styles.assistantHeading3}>{text}</h3>);
+      i++;
+    } else if (line.startsWith('##')) {
+      flushOrderedList();
+      const text = line.replace(/^#+\s*/, '').trim();
+      elements.push(<h2 key={`h2-${i}`} className={styles.assistantHeading2}>{text}</h2>);
+      i++;
+    }
+    // Check for ordered list items
+    else if (/^\d+\.\s+/.test(line)) {
+      const listText = line.replace(/^\d+\.\s+/, '').trim();
+      orderedListItems.push(
+        <li key={`ol-${i}`} className={styles.listItem}>
+          {renderTextWithFormatting(listText)}
+        </li>
+      );
+      i++;
+    }
+    // Check for bullet list items
+    else if (/^[•\-*]\s+/.test(line)) {
+      const bulletItems = [];
+      while (i < lines.length && /^[•\-*]\s+/.test(lines[i])) {
+        const listText = lines[i].replace(/^[•\-*]\s+/, '').trim();
+        bulletItems.push(
+          <li key={`ul-${i}`} className={styles.listItem}>
+            {renderTextWithFormatting(listText)}
+          </li>
+        );
+        i++;
       }
+      elements.push(
+        <ul key={`ul-group-${elements.length}`} className={styles.unorderedList}>
+          {bulletItems}
+        </ul>
+      );
+    }
+    // Regular paragraph
+    else if (line.trim()) {
+      flushOrderedList();
+      elements.push(
+        <p key={`p-${i}`} className={styles.assistantParagraph}>
+          {renderTextWithFormatting(line)}
+        </p>
+      );
+      i++;
+    } else {
+      i++;
+    }
+  }
 
-      if (match.type === 'link') {
-        const friendlyHref = normalizeHref(match.href);
+  flushOrderedList();
+  return elements.length > 0 ? elements : null;
+};
 
-        if (isContactHref(friendlyHref)) {
-          lastIndex = match.index + match.length;
-          continue;
-        }
+const renderTextWithFormatting = (text) => {
+  const nodes = [];
+  let lastIndex = 0;
+  const inlineMatches = [
+    ...Array.from(text.matchAll(/\*\*([^*]+)\*\*/g)).map((match) => ({
+      index: match.index ?? 0,
+      length: match[0].length,
+      type: 'bold',
+      content: match[1]
+    })),
+    ...Array.from(text.matchAll(LINK_MARKDOWN_REGEX)).map((match) => ({
+      index: match.index ?? 0,
+      length: match[0].length,
+      type: 'link',
+      label: match[1],
+      href: match[2]
+    })),
+    ...Array.from(text.matchAll(RAW_URL_REGEX)).map((match) => ({
+      index: match.index ?? 0,
+      length: match[0].length,
+      type: 'url',
+      value: match[1]
+    }))
+  ].sort((left, right) => left.index - right.index || left.length - right.length);
 
+  for (const match of inlineMatches) {
+    if (match.index < lastIndex) continue;
+
+    const before = text.slice(lastIndex, match.index);
+
+    if (before) {
+      nodes.push(before);
+    }
+
+    if (match.type === 'bold') {
+      nodes.push(
+        <strong key={`bold-${match.index}`} className={styles.boldText}>
+          {match.content}
+        </strong>
+      );
+    } else if (match.type === 'link') {
+      const friendlyHref = normalizeHref(match.href);
+
+      if (!isContactHref(friendlyHref)) {
         nodes.push(
           <a
-            key={`${lineIndex}-${match.index}`}
+            key={`link-${match.index}`}
             href={friendlyHref}
             target={/^https?:/i.test(friendlyHref) ? '_blank' : undefined}
             rel={/^https?:/i.test(friendlyHref) ? 'noreferrer' : undefined}
@@ -263,42 +359,37 @@ const renderAssistantText = (text) => {
             {getFriendlyLinkLabel(friendlyHref, match.label)}
           </a>
         );
-      } else {
-        const href = normalizeHref(match.value);
-
-        if (isContactHref(href)) {
-          lastIndex = match.index + match.length;
-          continue;
-        }
-
-        if (/^(https?:|mailto:|tel:|\/)/i.test(href)) {
-          nodes.push(
-            <a
-              key={`${lineIndex}-${match.index}`}
-              href={href}
-              target={/^https?:/i.test(href) ? '_blank' : undefined}
-              rel={/^https?:/i.test(href) ? 'noreferrer' : undefined}
-              className={styles.inlineActionLink}
-            >
-              {getFriendlyLinkLabel(href)}
-            </a>
-          );
-        } else {
-          nodes.push(match.value);
-        }
       }
+    } else if (match.type === 'url') {
+      const href = normalizeHref(match.value);
 
-      lastIndex = match.index + match.length;
+      if (!isContactHref(href) && /^(https?:|mailto:|tel:|\/)/i.test(href)) {
+        nodes.push(
+          <a
+            key={`url-${match.index}`}
+            href={href}
+            target={/^https?:/i.test(href) ? '_blank' : undefined}
+            rel={/^https?:/i.test(href) ? 'noreferrer' : undefined}
+            className={styles.inlineActionLink}
+          >
+            {getFriendlyLinkLabel(href)}
+          </a>
+        );
+      } else {
+        nodes.push(match.value);
+      }
     }
 
-    const remainder = line.slice(lastIndex);
+    lastIndex = match.index + match.length;
+  }
 
-    if (remainder) {
-      nodes.push(remainder.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*\n]+)\*/g, '$1').replace(/`([^`]+)`/g, '$1'));
-    }
+  const remainder = text.slice(lastIndex);
 
-    return <p key={`assistant-line-${lineIndex}`}>{nodes.length > 0 ? nodes : line}</p>;
-  });
+  if (remainder) {
+    nodes.push(remainder);
+  }
+
+  return nodes.length > 0 ? nodes : text;
 };
 
 const getAssistantContactActions = (text, hintText = '') => {
@@ -651,15 +742,22 @@ const Agent = () => {
     const explicitUrls = extractImageUrls(text);
     const source = `${String(text ?? '')} ${String(hintText ?? '')}`.toLowerCase();
 
-    if (!source) {
-      return explicitUrls;
+    // If explicit image URLs or markdown are present, prefer them.
+    if (explicitUrls.length > 0) {
+      return explicitUrls.slice(0, 3);
     }
+
+    if (!source) return [];
+
+    // Only show catalog images when the conversation explicitly requests images/photos.
+    const imageRequestKeywords = ['image', 'photo', 'pic', 'picture', 'show', 'display', 'image of', 'photo of', 'pic of', 'picture of'];
+    const askedForImage = imageRequestKeywords.some((kw) => source.includes(kw));
+
+    if (!askedForImage) return [];
 
     const matchedFallbackUrls = catalogImageIndex
       .filter((entry) => {
-        if (!entry.imageUrl) {
-          return false;
-        }
+        if (!entry.imageUrl) return false;
 
         return (
           entry.simplifiedName.length > 2 && source.includes(entry.simplifiedName)
@@ -669,7 +767,7 @@ const Agent = () => {
       })
       .map((entry) => entry.imageUrl);
 
-    return Array.from(new Set([...explicitUrls, ...matchedFallbackUrls])).slice(0, 3);
+    return Array.from(new Set(matchedFallbackUrls)).slice(0, 3);
   };
 
   const getPreviousUserText = (index) => {
@@ -740,7 +838,7 @@ const Agent = () => {
 
                           return (
                             <div className={`${styles.bubble} ${styles.assistantBubble}`}>
-                              {assistantText ? renderAssistantText(assistantText) : null}
+                              {assistantText ? parseMarkdownToElements(assistantText) : null}
                               {assistantImageUrls.length > 0 ? (
                                 <div className={styles.messageImageGrid}>
                                   {assistantImageUrls.map((imageUrl) => (
