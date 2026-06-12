@@ -5,7 +5,7 @@ import styles from './Navbar.module.css';
 import { useCatalog } from '../context/CatalogContext';
 
 // Cloudinary-hosted assets
-const CLD = 'https://res.cloudinary.com/dldi9hkkf/image/upload';
+const CLD = `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`;
 const brandIcon = `${CLD}/f_auto,q_auto,w_120/Vibrant_vegetable_assortment_in_detail_p8sfxf`;
 const aiBotGif  = `${CLD}/f_auto,q_auto,w_80/AI_Bot_e5ok5d`;
 

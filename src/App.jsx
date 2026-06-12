@@ -4,9 +4,12 @@ import Navbar from './components/Navbar';
 import Admin from './pages/Admin';
 import Home from './pages/Home';
 import Products from './pages/Products';
+import Footer from './components/Footer';
 import { CatalogProvider } from './context/CatalogContext';
-// Favicon served from Cloudinary
-const appIcon = 'https://res.cloudinary.com/dldi9hkkf/image/upload/f_auto,q_auto,w_64/Established_in_2022_n9j3bf';
+
+import styles from './App.module.css';
+
+const appIcon = `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto,w_64/Established_in_2022_n9j3bf`;
 
 const normalizeAdminPath = (pathValue) => {
   const candidate = String(pathValue ?? '/admin').trim();

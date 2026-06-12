@@ -366,7 +366,10 @@ const Admin = () => {
 
   if (!isUnlocked) {
     return (
-      <div className={styles.authPage}>
+      <div 
+        className={styles.authPage} 
+        style={{ '--bg-url': `url('https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto/admin_lgpc7d')` }}
+      >
         <motion.div
           className={`${styles.authCard} glass`}
           initial={{ opacity: 0, y: 30 }}

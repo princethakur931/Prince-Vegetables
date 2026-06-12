@@ -2,7 +2,7 @@ import React from 'react';
 import styles from './ProductCard.module.css';
 
 // Cloudinary-hosted asset
-const CLD = 'https://res.cloudinary.com/dldi9hkkf/image/upload';
+const CLD = `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`;
 const aiBotGif = `${CLD}/f_auto,q_auto,w_80/AI_Bot_e5ok5d`;
 
 const priceFormatter = new Intl.NumberFormat('en-IN', {

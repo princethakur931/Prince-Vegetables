@@ -1,6 +1,6 @@
 // All images are served from Cloudinary — no local asset imports needed.
-// Cloud: dldi9hkkf | Public IDs fetched via Admin API
-const CLD = 'https://res.cloudinary.com/dldi9hkkf/image/upload';
+// Cloud: VITE_CLOUDINARY_CLOUD_NAME | Public IDs fetched via Admin API
+const CLD = `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`;
 const IMG = (pid) => `${CLD}/f_auto,q_auto,w_600/${pid}`;
 const BNR = (pid) => `${CLD}/f_auto,q_auto,w_1400/${pid}`;
 

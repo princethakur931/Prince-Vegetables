@@ -4,9 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
 import { useCatalog } from '../context/CatalogContext';
 import styles from './Home.module.css';
+import { ShoppingCart } from 'lucide-react';
+import { buildCloudinaryUrl } from '../utils/cloudinaryUpload';
 
 // All static images served from Cloudinary
-const CLD = 'https://res.cloudinary.com/dldi9hkkf/image/upload';
+const CLD = `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`;
 const heroBg            = `${CLD}/f_auto,q_auto,w_1200/hero_vegetables_1775370899939_eeugtp`;
 const farmVerifiedIcon  = `${CLD}/f_auto,q_auto,w_160/Farm_Verified_w2tchj`;
 const establishedIcon   = `${CLD}/f_auto,q_auto,w_160/Established_in_2022_n9j3bf`;
