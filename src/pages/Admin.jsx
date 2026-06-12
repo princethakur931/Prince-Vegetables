@@ -9,12 +9,14 @@ import {
   Plus,
   Shield,
   Trash2,
+  Upload,
 } from 'lucide-react';
 import styles from './Admin.module.css';
 import {
   resolveImageRef
 } from '../data/catalogSeed';
 import { useCatalog } from '../context/CatalogContext';
+import { uploadToCloudinary } from '../utils/cloudinaryUpload';
 const DEFAULT_REMOTE_API_BASE_URL = 'https://prince-vegetables.vercel.app';
 
 const resolveAdminAuthApiUrl = () => {
@@ -39,39 +41,6 @@ const ADMIN_AUTH_API_URL = resolveAdminAuthApiUrl();
 
 // Removed LOCAL_DEV_PASSWORD so we don't need double .env variables
 
-const fileToDataUrl = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error('Failed to read file'));
-    reader.readAsDataURL(file);
-  });
-
-const uploadToCloudinary = async (file) => {
-  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
-
-  if (!cloudName || !uploadPreset) {
-    throw new Error('Missing Cloudinary configuration (VITE_CLOUDINARY_CLOUD_NAME or VITE_CLOUDINARY_UPLOAD_PRESET)');
-  }
-
-  const form = new FormData();
-  form.append('file', file);
-  form.append('upload_preset', uploadPreset);
-
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
-    method: 'POST',
-    body: form
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Cloudinary upload failed: ${res.status} ${text}`);
-  }
-
-  const json = await res.json();
-  return json.secure_url || json.url || '';
-};
 
 const normalizePriceInput = (rawValue) => {
   if (rawValue === '') {
@@ -112,7 +81,6 @@ const Admin = () => {
     sections,
     sectionOrder,
     storageStatus,
-    saveStatus,
     adBanners,
     getSection,
     updateSection,
@@ -135,32 +103,18 @@ const Admin = () => {
   const [selectedSectionId, setSelectedSectionId] = useState('');
   const [priceDrafts, setPriceDrafts] = useState({});
   const [offerDrafts, setOfferDrafts] = useState({});
-  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [adEditorOffset, setAdEditorOffset] = useState(0);
-  const adEditorPageSize = isMobileViewport ? 1 : 2;
-
+  // uploadStates: { [key: string]: { progress: number, error: string|null } }
+  const [uploadStates, setUploadStates] = useState({});
   const getLastAdEditorOffset = () => {
     const bannerCount = adBanners?.length ?? 0;
 
-    if (bannerCount <= adEditorPageSize) {
+    if (bannerCount <= 2) {
       return 0;
     }
 
-    return Math.floor((bannerCount - 1) / adEditorPageSize) * adEditorPageSize;
+    return Math.floor((bannerCount - 1) / 2) * 2;
   };
-
-  useEffect(() => {
-    const updateViewport = () => {
-      setIsMobileViewport(window.innerWidth <= 720);
-    };
-
-    updateViewport();
-    window.addEventListener('resize', updateViewport);
-
-    return () => {
-      window.removeEventListener('resize', updateViewport);
-    };
-  }, []);
 
   useEffect(() => {
     if (!selectedSectionId && sections.length > 0) {
@@ -229,12 +183,6 @@ const Admin = () => {
   );
 
   const selectedSection = selectedSectionId ? getSection(selectedSectionId) : sections[0];
-  const saveStatusLabel = {
-    idle: 'Idle',
-    saving: 'Saving...',
-    saved: 'Saved',
-    error: 'Save failed'
-  }[saveStatus] ?? 'Idle';
 
   const unlock = async (event) => {
     event.preventDefault();
@@ -296,53 +244,68 @@ const Admin = () => {
   const handleAdBannerUpload = async (bannerIndex, file) => {
     if (!file) return;
 
+    const uploadKey = `banner-${bannerIndex}`;
+
+    setUploadStates((prev) => ({ ...prev, [uploadKey]: { progress: 0, error: null } }));
+
     try {
-      const url = await uploadToCloudinary(file);
-      if (url) updateAdBanner(bannerIndex, url);
-    } catch (err) {
-      // fallback to inline if cloud upload fails
-      try {
-        const dataUrl = await fileToDataUrl(file);
-        updateAdBanner(bannerIndex, dataUrl);
-      } catch {
-        // ignore
-      }
-      // Optionally inform the user
-      // eslint-disable-next-line no-console
-      console.error('Failed to upload banner to Cloudinary', err);
+      const cloudinaryUrl = await uploadToCloudinary(file, {
+        onProgress: (progress) =>
+          setUploadStates((prev) => ({ ...prev, [uploadKey]: { progress, error: null } }))
+      });
+      updateAdBanner(bannerIndex, cloudinaryUrl);
+    } catch (error) {
+      setUploadStates((prev) => ({
+        ...prev,
+        [uploadKey]: { progress: 0, error: error.message ?? 'Upload failed' }
+      }));
+      return;
     }
+
+    setUploadStates((prev) => {
+      const next = { ...prev };
+      delete next[uploadKey];
+      return next;
+    });
   };
 
   const showPreviousAdEditorPage = () => {
-    setAdEditorOffset((previous) => Math.max(0, previous - adEditorPageSize));
+    setAdEditorOffset((previous) => Math.max(0, previous - 2));
   };
 
   const showNextAdEditorPage = () => {
     const lastOffset = getLastAdEditorOffset();
-    setAdEditorOffset((previous) => Math.min(lastOffset, previous + adEditorPageSize));
+    setAdEditorOffset((previous) => Math.min(lastOffset, previous + 2));
   };
 
-  const visibleAdBanners = (adBanners ?? []).slice(adEditorOffset, adEditorOffset + adEditorPageSize);
+  const visibleAdBanners = (adBanners ?? []).slice(adEditorOffset, adEditorOffset + 2);
 
   const handleProductFileUpload = async (sectionId, productId, file) => {
     if (!file) return;
 
+    const uploadKey = `product-${productId}`;
+
+    setUploadStates((prev) => ({ ...prev, [uploadKey]: { progress: 0, error: null } }));
+
     try {
-      const url = await uploadToCloudinary(file);
-      if (url) {
-        updateProduct(sectionId, productId, { imageRef: url });
-      }
-    } catch (err) {
-      // fallback to inline data URL if upload fails
-      try {
-        const dataUrl = await fileToDataUrl(file);
-        updateProduct(sectionId, productId, { imageRef: dataUrl });
-      } catch {
-        // ignore
-      }
-      // eslint-disable-next-line no-console
-      console.error('Failed to upload product image to Cloudinary', err);
+      const cloudinaryUrl = await uploadToCloudinary(file, {
+        onProgress: (progress) =>
+          setUploadStates((prev) => ({ ...prev, [uploadKey]: { progress, error: null } }))
+      });
+      updateProduct(sectionId, productId, { imageRef: cloudinaryUrl });
+    } catch (error) {
+      setUploadStates((prev) => ({
+        ...prev,
+        [uploadKey]: { progress: 0, error: error.message ?? 'Upload failed' }
+      }));
+      return;
     }
+
+    setUploadStates((prev) => {
+      const next = { ...prev };
+      delete next[uploadKey];
+      return next;
+    });
   };
 
   const handlePriceDraftChange = (sectionId, productId, rawValue) => {
@@ -403,9 +366,12 @@ const Admin = () => {
 
   if (!isUnlocked) {
     return (
-      <div className={styles.authPage}>
+      <div 
+        className={styles.authPage} 
+        style={{ '--bg-url': `url('https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto/admin_lgpc7d')` }}
+      >
         <motion.div
-          className={styles.authCard}
+          className={`${styles.authCard} glass`}
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -455,10 +421,6 @@ const Admin = () => {
             <span>products</span>
           </div>
           <div>
-            <strong>{saveStatusLabel}</strong>
-            <span>last save</span>
-          </div>
-          <div>
               <strong>{storageStatus}</strong>
               <span>catalog source</span>
           </div>
@@ -484,7 +446,7 @@ const Admin = () => {
               className={styles.iconButtonSmall}
               onClick={showNextAdEditorPage}
               title="Next banners"
-              disabled={adEditorOffset + adEditorPageSize >= (adBanners?.length ?? 0)}
+              disabled={adEditorOffset + 2 >= (adBanners?.length ?? 0)}
             >
               <ChevronRight size={16} />
             </button>
@@ -513,16 +475,46 @@ const Admin = () => {
                 </button>
               </div>
               <div className={styles.adPreviewBox}>
-                <img src={resolveBannerRef(banner)} alt={`Shop advertisement banner ${bannerIndex + 1}`} />
-              </div>
-              <label>
-                Upload banner {bannerIndex + 1}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) => handleAdBannerUpload(bannerIndex, event.target.files?.[0])}
+                <img
+                  src={resolveBannerRef(banner)}
+                  alt={`Shop advertisement banner ${bannerIndex + 1}`}
+                  loading="lazy"
+                  decoding="async"
                 />
-              </label>
+              </div>
+              {(() => {
+                const uploadKey = `banner-${bannerIndex}`;
+                const uploadState = uploadStates[uploadKey];
+                const isUploading = !!uploadState && uploadState.error === null;
+
+                return (
+                  <label className={isUploading ? styles.uploadingLabel : ''}>
+                    <span className={styles.uploadLabelText}>
+                      <Upload size={13} />
+                      {isUploading
+                        ? `Uploading… ${uploadState.progress}%`
+                        : `Change banner ${bannerIndex + 1}`}
+                    </span>
+                    {isUploading ? (
+                      <div className={styles.progressBar}>
+                        <div
+                          className={styles.progressFill}
+                          style={{ width: `${uploadState.progress}%` }}
+                        />
+                      </div>
+                    ) : null}
+                    {uploadState?.error ? (
+                      <span className={styles.uploadError}>{uploadState.error}</span>
+                    ) : null}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={isUploading}
+                      onChange={(event) => handleAdBannerUpload(bannerIndex, event.target.files?.[0])}
+                    />
+                  </label>
+                );
+              })()}
             </article>
             );
           })}
@@ -673,7 +665,12 @@ const Admin = () => {
 
                     <div className={styles.productLayout}>
                       <div className={styles.previewBox}>
-                        <img src={resolveImageRef(product.imageRef)} alt={product.name} />
+                        <img
+                          src={resolveImageRef(product.imageRef)}
+                          alt={product.name}
+                          loading="lazy"
+                          decoding="async"
+                        />
                       </div>
 
                       <div className={styles.productFields}>
@@ -740,14 +737,41 @@ const Admin = () => {
                           </select>
                         </label>
 
-                        <label>
-                          Upload image
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(event) => handleProductFileUpload(selectedSection.id, product.id, event.target.files?.[0])}
-                          />
-                        </label>
+                        {(() => {
+                          const uploadKey = `product-${product.id}`;
+                          const uploadState = uploadStates[uploadKey];
+                          const isUploading = !!uploadState && uploadState.error === null;
+
+                          return (
+                            <label className={isUploading ? styles.uploadingLabel : ''}>
+                              <span className={styles.uploadLabelText}>
+                                <Upload size={13} />
+                                {isUploading
+                                  ? `Uploading… ${uploadState.progress}%`
+                                  : 'Upload image to Cloudinary'}
+                              </span>
+                              {isUploading ? (
+                                <div className={styles.progressBar}>
+                                  <div
+                                    className={styles.progressFill}
+                                    style={{ width: `${uploadState.progress}%` }}
+                                  />
+                                </div>
+                              ) : null}
+                              {uploadState?.error ? (
+                                <span className={styles.uploadError}>{uploadState.error}</span>
+                              ) : null}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                disabled={isUploading}
+                                onChange={(event) =>
+                                  handleProductFileUpload(selectedSection.id, product.id, event.target.files?.[0])
+                                }
+                              />
+                            </label>
+                          );
+                        })()}
                       </div>
                     </div>
                   </motion.section>
