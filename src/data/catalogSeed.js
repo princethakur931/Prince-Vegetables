@@ -1,31 +1,12 @@
-import carrotImg from '../assets/fresh_carrot_1775370917174.png';
-import capsicumImg from '../assets/fresh_capsicum_1775370933456.png';
-import potatoImg from '../assets/potato.png';
-import tomatoImg from '../assets/tomato.png';
-import chiliImg from '../assets/green chili.png';
-import gingerImg from '../assets/Ginger.png';
-import garlicImg from '../assets/Garlic bulbs with seasoning and parsley.png';
-import lemonImg from '../assets/Bright lemon on green backdrop.png';
-import corianderImg from '../assets/Fresh bunch of cilantro on green background.png';
-import cabbageImg from '../assets/Fresh green cabbage on wood.png';
-import cauliflowerImg from '../assets/Fresh cauliflower on rustic wood.png';
-import palakImg from '../assets/Fresh desi palak on burlap cloth.png';
-import okraImg from '../assets/Fresh okra with star-shaped seeds.png';
-import brinjalImg from '../assets/Fresh eggplant on soft purple background.png';
-import onionImg from '../assets/Fresh red onion and sliced beauty.png';
-import beetrootImg from '../assets/Vibrant beetroot against soft pink backdrop.png';
-import peasImg from '../assets/Fresh green peas on wooden surface.png';
-import lettuceImg from '../assets/Fresh green lettuce on wooden surface.png';
-import beansImg from '../assets/Fresh green beans on beige surface.png';
-import gawarBeansImg from '../assets/Fresh green beans on slate background.png';
-import cucumberImg from '../assets/Fresh cucumber with slices on green.png';
-import radishImg from '../assets/Fresh daikon radish and slices.png';
-import banner1Image from '../assets/banner1.png';
-import banner2Image from '../assets/banner2.png';
+// All images are served from Cloudinary — no local asset imports needed.
+// Cloud: VITE_CLOUDINARY_CLOUD_NAME | Public IDs fetched via Admin API
+const CLD = `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`;
+const IMG = (pid) => `${CLD}/f_auto,q_auto,w_600/${pid}`;
+const BNR = (pid) => `${CLD}/f_auto,q_auto,w_1400/${pid}`;
 
 const BANNER_LIBRARY = {
-  banner1: banner1Image,
-  banner2: banner2Image
+  banner1: BNR('banner1_yssz4y'),
+  banner2: BNR('banner2_m3qlb5')
 };
 
 export const SECTION_ORDER = [
@@ -166,56 +147,58 @@ export const DEFAULT_DAILY_BESTSELLERS = [
 export const DEFAULT_AD_BANNERS = ['banner:banner1', 'banner:banner2'];
 
 export const IMAGE_LIBRARY = {
-  carrot: carrotImg,
-  capsicum: capsicumImg,
-  potato: potatoImg,
-  tomato: tomatoImg,
-  chili: chiliImg,
-  ginger: gingerImg,
-  garlic: garlicImg,
-  lemon: lemonImg,
-  coriander: corianderImg,
-  cabbage: cabbageImg,
-  cauliflower: cauliflowerImg,
-  palak: palakImg,
-  okra: okraImg,
-  brinjal: brinjalImg,
-  onion: onionImg,
-  beetroot: beetrootImg,
-  peas: peasImg,
-  lettuce: lettuceImg,
-  beans: beansImg,
-  gawarBeans: gawarBeansImg,
-  cucumber: cucumberImg,
-  radish: radishImg
+  carrot:      IMG('fresh_carrot_1775370917174_eg6x9s'),
+  capsicum:    IMG('fresh_capsicum_1775370933456_szpj1t'),
+  potato:      IMG('potato_a3meiu'),
+  tomato:      IMG('tomato_ngbkxn'),
+  chili:       IMG('green_chili_ypo1li'),
+  ginger:      IMG('Ginger_f5jsrv'),
+  garlic:      IMG('Garlic_bulbs_with_seasoning_and_parsley_gpyd3d'),
+  lemon:       IMG('Bright_lemon_on_green_backdrop_zj65or'),
+  coriander:   IMG('Fresh_bunch_of_cilantro_on_green_background_yloxwb'),
+  cabbage:     IMG('Fresh_green_cabbage_on_wood_vnzn4l'),
+  cauliflower: IMG('Fresh_cauliflower_on_rustic_wood_uc340r'),
+  palak:       IMG('Fresh_desi_palak_on_burlap_cloth_idhirs'),
+  okra:        IMG('Fresh_okra_with_star-shaped_seeds_b0tpnw'),
+  brinjal:     IMG('Fresh_eggplant_on_soft_purple_background_ywae4b'),
+  onion:       IMG('Fresh_red_onion_and_sliced_beauty_mzdhgq'),
+  beetroot:    IMG('prince_vegetables/oatq9phkpee4nx4a78dz'),
+  peas:        IMG('Fresh_green_peas_on_wooden_surface_ovtwi2'),
+  lettuce:     IMG('Fresh_green_lettuce_on_wooden_surface_qfj8dh'),
+  beans:       IMG('Fresh_green_beans_on_beige_surface_sgfzgm'),
+  gawarBeans:  IMG('Fresh_green_beans_on_slate_background_cnw3nx'),
+  cucumber:    IMG('Fresh_cucumber_with_slices_on_green_y3opwb'),
+  radish:      IMG('Fresh_daikon_radish_and_slices_alhcwx')
 };
 
+// ASSET_FILE_LIBRARY: backward-compat for old MongoDB refs that stored filename strings.
 const ASSET_FILE_LIBRARY = {
-  'fresh_carrot_1775370917174.png': carrotImg,
-  'fresh_capsicum_1775370933456.png': capsicumImg,
-  'potato.png': potatoImg,
-  'tomato.png': tomatoImg,
-  'green chili.png': chiliImg,
-  'ginger.png': gingerImg,
-  'garlic bulbs with seasoning and parsley.png': garlicImg,
-  'bright lemon on green backdrop.png': lemonImg,
-  'fresh bunch of cilantro on green background.png': corianderImg,
-  'fresh green cabbage on wood.png': cabbageImg,
-  'fresh cauliflower on rustic wood.png': cauliflowerImg,
-  'fresh desi palak on burlap cloth.png': palakImg,
-  'fresh okra with star-shaped seeds.png': okraImg,
-  'fresh eggplant on soft purple background.png': brinjalImg,
-  'fresh red onion and sliced beauty.png': onionImg,
-  'vibrant beetroot against soft pink backdrop.png': beetrootImg,
-  'fresh green peas on wooden surface.png': peasImg,
-  'fresh green lettuce on wooden surface.png': lettuceImg,
-  'fresh green beans on beige surface.png': beansImg,
-  'fresh green beans on slate background.png': gawarBeansImg,
-  'fresh cucumber with slices on green.png': cucumberImg,
-  'fresh daikon radish and slices.png': radishImg,
-  'banner1.png': banner1Image,
-  'banner2.png': banner2Image
+  'fresh_carrot_1775370917174.png':                      IMAGE_LIBRARY.carrot,
+  'fresh_capsicum_1775370933456.png':                    IMAGE_LIBRARY.capsicum,
+  'potato.png':                                          IMAGE_LIBRARY.potato,
+  'tomato.png':                                          IMAGE_LIBRARY.tomato,
+  'green chili.png':                                     IMAGE_LIBRARY.chili,
+  'ginger.png':                                          IMAGE_LIBRARY.ginger,
+  'garlic bulbs with seasoning and parsley.png':         IMAGE_LIBRARY.garlic,
+  'bright lemon on green backdrop.png':                  IMAGE_LIBRARY.lemon,
+  'fresh bunch of cilantro on green background.png':     IMAGE_LIBRARY.coriander,
+  'fresh green cabbage on wood.png':                     IMAGE_LIBRARY.cabbage,
+  'fresh cauliflower on rustic wood.png':                IMAGE_LIBRARY.cauliflower,
+  'fresh desi palak on burlap cloth.png':                IMAGE_LIBRARY.palak,
+  'fresh okra with star-shaped seeds.png':               IMAGE_LIBRARY.okra,
+  'fresh eggplant on soft purple background.png':        IMAGE_LIBRARY.brinjal,
+  'fresh red onion and sliced beauty.png':               IMAGE_LIBRARY.onion,
+  'vibrant beetroot against soft pink backdrop.png':     IMAGE_LIBRARY.beetroot,
+  'fresh green peas on wooden surface.png':              IMAGE_LIBRARY.peas,
+  'fresh green lettuce on wooden surface.png':           IMAGE_LIBRARY.lettuce,
+  'fresh green beans on beige surface.png':              IMAGE_LIBRARY.beans,
+  'fresh green beans on slate background.png':           IMAGE_LIBRARY.gawarBeans,
+  'fresh cucumber with slices on green.png':             IMAGE_LIBRARY.cucumber,
+  'fresh daikon radish and slices.png':                  IMAGE_LIBRARY.radish,
+  'banner1.png':                                         BANNER_LIBRARY.banner1,
+  'banner2.png':                                         BANNER_LIBRARY.banner2
 };
+
 
 const normalizeAssetPath = (value) => {
   if (typeof value !== 'string') {
@@ -253,6 +236,9 @@ const resolveKnownAsset = (value) => {
   return ASSET_FILE_LIBRARY[dehashedKey] ?? null;
 };
 
+const isCloudinaryUrl = (value) =>
+  typeof value === 'string' && value.includes('res.cloudinary.com');
+
 const isExternalOrInlineImage = (value) =>
   /^data:image\//i.test(value) ||
   /^blob:/i.test(value) ||
@@ -277,11 +263,11 @@ export const normalizeBannerRef = (value) => {
 
   const knownAsset = resolveKnownAsset(trimmed);
 
-  if (knownAsset === banner1Image) {
+  if (knownAsset === BANNER_LIBRARY.banner1) {
     return 'banner:banner1';
   }
 
-  if (knownAsset === banner2Image) {
+  if (knownAsset === BANNER_LIBRARY.banner2) {
     return 'banner:banner2';
   }
 
@@ -320,8 +306,13 @@ export const resolveBannerRef = (value) => {
     return knownAsset;
   }
 
+  // Cloudinary URL — already optimized via BNR constant, return as-is
+  if (isCloudinaryUrl(normalized)) {
+    return normalized;
+  }
+
   if (!isExternalOrInlineImage(normalized)) {
-    return banner1Image;
+    return BANNER_LIBRARY.banner1;
   }
 
   return normalized;
@@ -409,6 +400,11 @@ export const buildDefaultCatalog = () =>
 export const resolveImageRef = (imageRef) => {
   if (!imageRef) {
     return IMAGE_LIBRARY.carrot;
+  }
+
+  // Cloudinary URL — already has f_auto,q_auto,w_600 from IMG constant, return as-is
+  if (isCloudinaryUrl(imageRef)) {
+    return imageRef;
   }
 
   const knownAsset = resolveKnownAsset(imageRef);

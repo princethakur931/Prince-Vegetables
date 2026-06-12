@@ -5,12 +5,15 @@ import Button from '../components/Button';
 import PageSEO from '../components/PageSEO';
 import { useCatalog } from '../context/CatalogContext';
 import styles from './Home.module.css';
+import { ShoppingCart } from 'lucide-react';
+import { buildCloudinaryUrl } from '../utils/cloudinaryUpload';
 
-// We import the hero image we generated
-import heroBg from '../assets/hero_vegetables_1775370899939.png';
-import farmVerifiedIcon from '../assets/Farm Verified.png';
-import establishedIcon from '../assets/Established in 2022.png';
-import handpickedIcon from '../assets/Handpicked Quality.png';
+// All static images served from Cloudinary
+const CLD = `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`;
+const heroBg            = `${CLD}/f_auto,q_auto,w_1200/hero_vegetables_1775370899939_eeugtp`;
+const farmVerifiedIcon  = `${CLD}/f_auto,q_auto,w_160/Farm_Verified_w2tchj`;
+const establishedIcon   = `${CLD}/f_auto,q_auto,w_160/Established_in_2022_n9j3bf`;
+const handpickedIcon    = `${CLD}/f_auto,q_auto,w_160/Handpicked_Quality_hbzemv`;
 
 const titleContainer = {
   hidden: { opacity: 1 },
@@ -291,7 +294,7 @@ const Home = () => {
             whileHover={{ y: -8, scale: 1.015 }}
           >
             <div className={styles.featureHeader}>
-              <img src={card.icon} alt={card.title} className={styles.featureIcon} />
+              <img src={card.icon} alt={card.title} className={styles.featureIcon} loading="lazy" decoding="async" />
               <h3>{card.title}</h3>
             </div>
             <p>{card.copy}</p>
