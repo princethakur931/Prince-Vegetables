@@ -1,6 +1,9 @@
 import React from 'react';
 import styles from './ProductCard.module.css';
-import aiBotGif from '../assets/AI Bot.gif';
+
+// Cloudinary-hosted asset
+const CLD = 'https://res.cloudinary.com/dldi9hkkf/image/upload';
+const aiBotGif = `${CLD}/f_auto,q_auto,w_80/AI_Bot_e5ok5d`;
 
 const priceFormatter = new Intl.NumberFormat('en-IN', {
   style: 'currency',
@@ -15,7 +18,15 @@ const ProductCard = ({ product }) => {
         {product.discount && (
           <div className={styles.badge}>{product.discount}% OFF</div>
         )}
-        <img src={product.image} alt={product.name} className={styles.image} />
+        <img
+          src={product.image}
+          alt={product.name}
+          className={styles.image}
+          loading="lazy"
+          decoding="async"
+          width="200"
+          height="200"
+        />
       </div>
       <div className={styles.content}>
         <div className={styles.header}>

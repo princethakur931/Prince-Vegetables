@@ -5,7 +5,8 @@ import Admin from './pages/Admin';
 import Home from './pages/Home';
 import Products from './pages/Products';
 import { CatalogProvider } from './context/CatalogContext';
-import appIcon from './assets/Vibrant vegetable assortment in detail.png';
+// Favicon served from Cloudinary
+const appIcon = 'https://res.cloudinary.com/dldi9hkkf/image/upload/f_auto,q_auto,w_64/Established_in_2022_n9j3bf';
 
 const normalizeAdminPath = (pathValue) => {
   const candidate = String(pathValue ?? '/admin').trim();
