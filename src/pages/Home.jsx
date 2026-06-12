@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, useInView, useScroll, useTransform } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
+import PageSEO from '../components/PageSEO';
 import { useCatalog } from '../context/CatalogContext';
 import styles from './Home.module.css';
 import { ShoppingCart } from 'lucide-react';
@@ -125,7 +126,7 @@ const AnimatedStatValue = ({ value, label, prefix = '', suffix = '' }) => {
 const Home = () => {
   const navigate = useNavigate();
   const { scrollY } = useScroll();
-  const y1 = useTransform(scrollY, [0, 1000], [0, 200]);
+  const y1 = useTransform(scrollY, [0, 1000], [0, 70]);
   const [isMobile, setIsMobile] = useState(false);
   const { getSection } = useCatalog();
 
@@ -178,6 +179,7 @@ const Home = () => {
 
   return (
     <div className={styles.homeContainer}>
+      <PageSEO title="Prince Vegetables - Fresh Vegetables Online" />
       <motion.section 
         className={styles.hero}
         initial={{ opacity: 0 }}
@@ -192,20 +194,17 @@ const Home = () => {
             animate="show"
           >
             <motion.span className={styles.titleLine} variants={titleLine}>
-              Fresh Vegetables,
-            </motion.span>
-            <motion.span className={styles.titleLine} variants={titleLine}>
-              Zero Compromise.
+              Prince Vegetables
             </motion.span>
           </motion.h1>
-          
-          <motion.p 
+
+          <motion.p
             className={styles.subtitle}
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.8 }}
+            transition={{ delay: 0.25, duration: 0.8 }}
           >
-            Seasonal produce from trusted local farms, packed with care and delivered to your doorstep every day.
+            Fresh vegetables delivered with quality, trust, and everyday value from trusted local farms.
           </motion.p>
           
           <motion.div
@@ -214,7 +213,7 @@ const Home = () => {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.6, duration: 0.8 }}
           >
-            <Button onClick={() => navigate('/products')} className={styles.ctaButton}>
+            <Button onClick={() => navigate('/shop')} className={styles.ctaButton}>
               Explore Fresh Picks
             </Button>
           </motion.div>
@@ -245,7 +244,7 @@ const Home = () => {
             src={heroBg} 
             alt="Fresh Organic Vegetables" 
             className={styles.heroImage}
-            animate={{ y: isMobile ? [0, -7, 0] : [0, -15, 0] }}
+            animate={{ y: isMobile ? [0, -6, 0] : [0, -10, 0] }}
             transition={{ repeat: Infinity, duration: isMobile ? 4.8 : 6, ease: 'easeInOut' }}
           />
         </motion.div>

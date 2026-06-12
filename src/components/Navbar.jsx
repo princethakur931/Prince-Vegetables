@@ -19,7 +19,7 @@ const Navbar = () => {
   const handleSearchSubmit = (event) => {
     event.preventDefault();
     closeMenu();
-    navigate('/products');
+    navigate('/shop');
   };
 
   return (
@@ -33,9 +33,9 @@ const Navbar = () => {
       
       <div className={styles.navLinks}>
         <NavLink to="/" className={({ isActive }) => isActive ? styles.active : ''}>Home</NavLink>
-        <NavLink to="/products" className={({ isActive }) => isActive ? styles.active : ''}>Shop</NavLink>
-        <a href="#about">About</a>
-        <a href="#contact">Contact</a>
+        <NavLink to="/shop" className={({ isActive }) => isActive ? styles.active : ''}>Shop</NavLink>
+        <NavLink to="/agent" className={({ isActive }) => isActive ? styles.active : ''}>Agent</NavLink>
+        <NavLink to="/contact" className={({ isActive }) => isActive ? styles.active : ''}>Contact</NavLink>
       </div>
 
       <div className={styles.actions}>
@@ -48,7 +48,7 @@ const Navbar = () => {
             onChange={(event) => setSearchQuery(event.target.value)}
           />
         </form>
-        <button className={styles.iconButton}>
+        <button className={styles.iconButton} onClick={() => navigate('/agent')} aria-label="Open AI agent">
           <img src={aiBotGif} alt="AI assistant" className={styles.actionGifIcon} />
         </button>
         <button
@@ -72,9 +72,9 @@ const Navbar = () => {
         </form>
 
         <NavLink to="/" onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>Home</NavLink>
-        <NavLink to="/products" onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>Shop</NavLink>
-        <a href="#about" onClick={closeMenu}>About</a>
-        <a href="#contact" onClick={closeMenu}>Contact</a>
+        <NavLink to="/shop" onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>Shop</NavLink>
+        <NavLink to="/agent" onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>Agent</NavLink>
+        <NavLink to="/contact" onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>Contact</NavLink>
       </div>
     </nav>
   );

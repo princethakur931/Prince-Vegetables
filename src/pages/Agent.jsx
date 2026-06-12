@@ -1,0 +1,922 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import { SendHorizontal, Sparkles, Mic } from 'lucide-react';
+import styles from './Agent.module.css';
+import aiBotGif from '../assets/AI Bot.gif';
+import { useCatalog } from '../context/CatalogContext';
+
+const SYSTEM_PROMPT = [
+  'You are Prince AI Assistant for Prince Vegetables.',
+  'Help users with fresh vegetables, availability, shopping guidance, product sections, and general store questions.',
+  'Write like a real helpful human shop assistant: warm, natural, and conversational.',
+  'Keep the tone friendly and smart like a great chat assistant, not robotic.',
+  'Match the user language automatically (Hindi, Hinglish, or English) and keep wording simple.',
+  'FORMAT RESPONSES IN A CLEAN AND MOBILE-FRIENDLY WAY:',
+  '- Use headings (##, ###) to organize information',
+  '- Use numbered lists when showing categories or steps',
+  '- Use bullet points • for items or features',
+  '- Add relevant emojis (🥬🥕🍅🌿🛒🚚💚) to make it engaging',
+  '- Keep paragraphs short (1-2 lines maximum)',
+  '- Highlight important text using **bold**',
+  '- End with a clear follow-up question',
+  '- Avoid large blocks of text - break it up',
+  'Reply in 3-6 short lines by default, with clear useful detail (not one-liner unless user asks).',
+  'When useful, ask one small follow-up question to continue the conversation naturally.',
+  'If the user asks for price, stock, or section guidance, answer directly first, then suggest next helpful step.',
+  'Use markdown formatting (**, ##, ###, -, numbered lists) for better readability.',
+  'If the user asks about a specific vegetable, suggest the most relevant category or shopping tip.',
+  'If the user asks for image/photo/pic, mention the exact vegetable names clearly so matching images can be shown in chat.',
+  'When the user asks for WhatsApp, call, email, or any page/section link, use the exact links from websiteContext.contactPage.contactDetails and websiteContext.pageLinks.',
+  'Do not print raw URLs unless the user explicitly asks for them; prefer short natural-language contact replies.',
+].join(' ');
+
+const WELCOME_HEADING = 'Hello! How Can I Help You Today?';
+const IMAGE_MARKDOWN_REGEX = /!\[[^\]]*\]\(([^)\s]+)\)/gi;
+const LINK_MARKDOWN_REGEX = /\[([^\]]+)]\(([^)]+)\)/g;
+const RAW_URL_REGEX = /(https?:\/\/[^\s<>"'\])]+|\/assets\/[^\s<>"'\])]+|data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+)/gi;
+const EMAIL_REGEX = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
+const PHONE_REGEX = /(?:\+?91[\s-]?)?[6-9]\d{9}\b/g;
+const APP_ROUTE_LINKS = {
+  home: '/',
+  shop: '/shop',
+  products: '/shop',
+  agent: '/agent',
+  ai: '/agent',
+  contact: '/#contact'
+};
+const CONTACT_DETAILS = {
+  phone: '+91 8669193011',
+  email: 'princethakur545454@gmail.com',
+  address: 'Street No. 5, Shree Guru Datta Colony 1, Walhekarwadi, Sector No. 30, Nigdi, Pimpri-Chinchwad, Maharashtra 411033',
+  whatsapp: 'https://wa.me/918669193011?text=Hello%20Prince%20Vegetables%2C%20I%20want%20to%20place%20an%20order.',
+  call: 'tel:+918669193011',
+  gmail: 'mailto:princethakur545454@gmail.com?subject=Order%20Enquiry%20-%20Prince%20Vegetables&body=Hi%20Prince%20Vegetables%2C%0A%0AI%20want%20to%20know%20more%20about%20today%27s%20fresh%20stock.'
+};
+
+const CONTACT_ACTIONS = [
+  {
+    key: 'whatsapp',
+    label: 'WhatsApp Now',
+    href: CONTACT_DETAILS.whatsapp,
+    keywords: ['whatsapp', 'wa.me', 'message', 'chat']
+  },
+  {
+    key: 'call',
+    label: 'Call Now',
+    href: CONTACT_DETAILS.call,
+    keywords: ['call', 'phone', 'ring', 'contact number', 'mobile']
+  },
+  {
+    key: 'gmail',
+    label: 'Email Now',
+    href: CONTACT_DETAILS.gmail,
+    keywords: ['gmail', 'email', 'mail', 'inbox']
+  }
+];
+
+const CONTACT_ROW_LABELS = {
+  whatsapp: 'WhatsApp',
+  call: 'Phone',
+  gmail: 'Email'
+};
+
+const CONTACT_ROW_ORDER = ['whatsapp', 'call', 'gmail'];
+
+const sanitizeUrl = (url) =>
+  String(url ?? '')
+    .trim()
+    .replace(/^['"(<\[]+/, '')
+    .replace(/[>'")\].,;:!?]+$/g, '')
+    .trim();
+
+const normalizeImageUrl = (url) => {
+  const candidate = sanitizeUrl(url);
+
+  if (!candidate) {
+    return '';
+  }
+
+  if (candidate.startsWith('/assets/') && typeof window !== 'undefined') {
+    return `${window.location.origin}${candidate}`;
+  }
+
+  return candidate;
+};
+
+const normalizeHref = (href) => {
+  const candidate = sanitizeUrl(href);
+
+  if (!candidate) {
+    return '';
+  }
+
+  if (/^(https?:|mailto:|tel:|data:|\/)/i.test(candidate)) {
+    return candidate;
+  }
+
+  const routeHref = APP_ROUTE_LINKS[candidate.toLowerCase()];
+  return routeHref || candidate;
+};
+
+const getFriendlyLinkLabel = (href, fallbackLabel = '') => {
+  const candidate = String(href ?? '').toLowerCase();
+
+  if (candidate.startsWith('https://wa.me/') || candidate.startsWith('whatsapp:')) {
+    return 'WhatsApp Now';
+  }
+
+  if (candidate.startsWith('tel:')) {
+    return 'Call Now';
+  }
+
+  if (candidate.startsWith('mailto:')) {
+    return 'Email Now';
+  }
+
+  if (candidate.includes('google.com/maps') || candidate.includes('maps.app.goo.gl')) {
+    return 'Google Maps';
+  }
+
+  if (candidate === '/' || candidate === '/shop' || candidate === '/products' || candidate === '/agent' || candidate === '/#contact') {
+    return 'Open Page';
+  }
+
+  return fallbackLabel || href || 'Open Link';
+};
+
+const isContactHref = (href) => {
+  const candidate = String(href ?? '').toLowerCase();
+
+  return candidate.startsWith('https://wa.me/')
+    || candidate.startsWith('whatsapp:')
+    || candidate.startsWith('tel:')
+    || candidate.startsWith('mailto:');
+};
+
+const isLikelyImageUrl = (url) => {
+  const value = String(url ?? '').toLowerCase();
+
+  if (value.startsWith('data:image/')) {
+    return true;
+  }
+
+  return /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/.test(value)
+    || value.startsWith('/assets/')
+    || value.includes('images.unsplash.com')
+    || value.includes('pexels.com/photo')
+    || value.includes('pixabay.com')
+    || value.includes('cloudinary.com')
+    || value.includes('googleusercontent.com');
+};
+
+const extractImageUrls = (text) => {
+  const source = String(text ?? '');
+  const urls = new Set();
+  let match;
+
+  while ((match = IMAGE_MARKDOWN_REGEX.exec(source)) !== null) {
+    const candidate = normalizeImageUrl(match[1]);
+
+    if (candidate && isLikelyImageUrl(candidate)) {
+      urls.add(candidate);
+    }
+  }
+
+  while ((match = RAW_URL_REGEX.exec(source)) !== null) {
+    const candidate = normalizeImageUrl(match[1]);
+
+    if (candidate && isLikelyImageUrl(candidate)) {
+      urls.add(candidate);
+    }
+  }
+
+  return Array.from(urls);
+};
+
+const stripImageReferences = (text) => {
+  const source = String(text ?? '');
+
+  return source
+    .replace(IMAGE_MARKDOWN_REGEX, '')
+    .replace(RAW_URL_REGEX, (value) => (isLikelyImageUrl(value) ? '' : value))
+    .replace(EMAIL_REGEX, '')
+    .replace(PHONE_REGEX, '')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*\n]+)\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+};
+
+const removeImageTokensFromText = (text) => {
+  const source = String(text ?? '');
+  return source
+    .replace(IMAGE_MARKDOWN_REGEX, '')
+    .replace(RAW_URL_REGEX, (value) => (isLikelyImageUrl(value) ? '' : value))
+    .replace(EMAIL_REGEX, '')
+    .replace(PHONE_REGEX, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+};
+
+const parseMarkdownToElements = (text) => {
+  const source = stripImageReferences(text);
+
+  if (!source) {
+    return null;
+  }
+
+  const lines = source.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+  const elements = [];
+  let i = 0;
+  let orderedListItems = [];
+
+  const flushOrderedList = () => {
+    if (orderedListItems.length > 0) {
+      elements.push(
+        <ol key={`ol-flush-${elements.length}`} className={styles.orderedList}>
+          {orderedListItems}
+        </ol>
+      );
+      orderedListItems = [];
+    }
+  };
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Check for heading (## or ###)
+    if (line.startsWith('###')) {
+      flushOrderedList();
+      const text = line.replace(/^#+\s*/, '').trim();
+      elements.push(<h3 key={`h3-${i}`} className={styles.assistantHeading3}>{text}</h3>);
+      i++;
+    } else if (line.startsWith('##')) {
+      flushOrderedList();
+      const text = line.replace(/^#+\s*/, '').trim();
+      elements.push(<h2 key={`h2-${i}`} className={styles.assistantHeading2}>{text}</h2>);
+      i++;
+    }
+    // Check for ordered list items
+    else if (/^\d+\.\s+/.test(line)) {
+      const listText = line.replace(/^\d+\.\s+/, '').trim();
+      orderedListItems.push(
+        <li key={`ol-${i}`} className={styles.listItem}>
+          {renderTextWithFormatting(listText)}
+        </li>
+      );
+      i++;
+    }
+    // Check for bullet list items
+    else if (/^[•\-*]\s+/.test(line)) {
+      const bulletItems = [];
+      while (i < lines.length && /^[•\-*]\s+/.test(lines[i])) {
+        const listText = lines[i].replace(/^[•\-*]\s+/, '').trim();
+        bulletItems.push(
+          <li key={`ul-${i}`} className={styles.listItem}>
+            {renderTextWithFormatting(listText)}
+          </li>
+        );
+        i++;
+      }
+      elements.push(
+        <ul key={`ul-group-${elements.length}`} className={styles.unorderedList}>
+          {bulletItems}
+        </ul>
+      );
+    }
+    // Regular paragraph
+    else if (line.trim()) {
+      flushOrderedList();
+      elements.push(
+        <p key={`p-${i}`} className={styles.assistantParagraph}>
+          {renderTextWithFormatting(line)}
+        </p>
+      );
+      i++;
+    } else {
+      i++;
+    }
+  }
+
+  flushOrderedList();
+  return elements.length > 0 ? elements : null;
+};
+
+const renderTextWithFormatting = (text) => {
+  const nodes = [];
+  let lastIndex = 0;
+  const inlineMatches = [
+    ...Array.from(text.matchAll(/\*\*([^*]+)\*\*/g)).map((match) => ({
+      index: match.index ?? 0,
+      length: match[0].length,
+      type: 'bold',
+      content: match[1]
+    })),
+    ...Array.from(text.matchAll(LINK_MARKDOWN_REGEX)).map((match) => ({
+      index: match.index ?? 0,
+      length: match[0].length,
+      type: 'link',
+      label: match[1],
+      href: match[2]
+    })),
+    ...Array.from(text.matchAll(RAW_URL_REGEX)).map((match) => ({
+      index: match.index ?? 0,
+      length: match[0].length,
+      type: 'url',
+      value: match[1]
+    }))
+  ].sort((left, right) => left.index - right.index || left.length - right.length);
+
+  for (const match of inlineMatches) {
+    if (match.index < lastIndex) continue;
+
+    const before = text.slice(lastIndex, match.index);
+
+    if (before) {
+      nodes.push(before);
+    }
+
+    if (match.type === 'bold') {
+      nodes.push(
+        <strong key={`bold-${match.index}`} className={styles.boldText}>
+          {match.content}
+        </strong>
+      );
+    } else if (match.type === 'link') {
+      const friendlyHref = normalizeHref(match.href);
+
+      if (!isContactHref(friendlyHref)) {
+        nodes.push(
+          <a
+            key={`link-${match.index}`}
+            href={friendlyHref}
+            target={/^https?:/i.test(friendlyHref) ? '_blank' : undefined}
+            rel={/^https?:/i.test(friendlyHref) ? 'noreferrer' : undefined}
+            className={styles.inlineActionLink}
+          >
+            {getFriendlyLinkLabel(friendlyHref, match.label)}
+          </a>
+        );
+      }
+    } else if (match.type === 'url') {
+      const href = normalizeHref(match.value);
+
+      if (!isContactHref(href) && /^(https?:|mailto:|tel:|\/)/i.test(href)) {
+        nodes.push(
+          <a
+            key={`url-${match.index}`}
+            href={href}
+            target={/^https?:/i.test(href) ? '_blank' : undefined}
+            rel={/^https?:/i.test(href) ? 'noreferrer' : undefined}
+            className={styles.inlineActionLink}
+          >
+            {getFriendlyLinkLabel(href)}
+          </a>
+        );
+      } else {
+        nodes.push(match.value);
+      }
+    }
+
+    lastIndex = match.index + match.length;
+  }
+
+  const remainder = text.slice(lastIndex);
+
+  if (remainder) {
+    nodes.push(remainder);
+  }
+
+  return nodes.length > 0 ? nodes : text;
+};
+
+const getAssistantContactActions = (text, hintText = '') => {
+  const source = `${String(text ?? '')} ${String(hintText ?? '')}`.toLowerCase();
+
+  return CONTACT_ACTIONS.filter((action) => action.keywords.some((keyword) => source.includes(keyword)));
+};
+
+const stripContactDetails = (text) => {
+  const source = String(text ?? '');
+
+  return source
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter((line) => {
+      const lower = line.toLowerCase();
+
+      if (!line) return false;
+
+      if (lower.startsWith('phone:') || lower.startsWith('whatsapp:') || lower.startsWith('email:')) {
+        return false;
+      }
+
+      if (lower.includes('mailto:') || lower.includes('tel:') || lower.includes('wa.me') || lower.includes('whatsapp')) {
+        return false;
+      }
+
+      return true;
+    })
+    .join('\n')
+    .trim();
+};
+
+const ContactActionCard = ({ actions }) => (
+  <div className={styles.contactActionCard}>
+    {CONTACT_ROW_ORDER.filter((key) => actions.some((action) => action.key === key)).map((key) => {
+      const action = actions.find((entry) => entry.key === key);
+
+      if (!action) return null;
+
+      return (
+        <div key={action.key} className={styles.contactActionRow}>
+          <span className={styles.contactActionLabel}>{CONTACT_ROW_LABELS[action.key] ?? action.key}</span>
+          <a
+            href={action.href}
+            target={action.href.startsWith('http') ? '_blank' : undefined}
+            rel={action.href.startsWith('http') ? 'noreferrer' : undefined}
+            className={styles.contactActionChip}
+          >
+            {action.label}
+          </a>
+        </div>
+      );
+    })}
+  </div>
+);
+
+const Agent = () => {
+  const location = useLocation();
+  const { sections, adBanners, sectionOrder, storageStatus, resolveImageRef, resolveBannerRef } = useCatalog();
+  const [messages, setMessages] = useState([]);
+  const [inputValue, setInputValue] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [hasStartedChat, setHasStartedChat] = useState(false);
+  const [typewriterText, setTypewriterText] = useState('');
+  const [failedImageUrls, setFailedImageUrls] = useState(() => new Set());
+
+  const scrollerRef = useRef(null);
+  const textareaRef = useRef(null);
+  
+  const resetTextareaHeight = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+    }
+  };
+  const querySentRef = useRef(false);
+
+  // Allow passing query via url to automatically start chat
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const query = params.get('query');
+    
+    // Automatically trigger send message ONLY once per session using querySentRef
+    if (query && !querySentRef.current && messages.length === 0) {
+      querySentRef.current = true;
+      // Strip URL query to avoid triggering again on browser refresh
+      window.history.replaceState({}, document.title, location.pathname);
+      
+      // Use setTimeout so the initial render completes
+      setTimeout(() => sendMessage(query), 10);
+    }
+  }, [location.search, messages.length]);
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSubmit(event);
+    }
+  };
+  const shouldShowWelcome = useMemo(() => !hasStartedChat && messages.length === 0, [hasStartedChat, messages.length]);
+  const catalogImageIndex = useMemo(
+    () =>
+      sections.flatMap((section) =>
+        section.items.map((item) => {
+          const normalizedName = String(item.name ?? '').toLowerCase();
+          const simplifiedName = normalizedName.replace(/\s*\([^)]*\)\s*/g, '').trim();
+
+          return {
+            name: normalizedName,
+            simplifiedName,
+            imageUrl: resolveImageRef(item.imageRef)
+          };
+        })
+      ),
+    [resolveImageRef, sections]
+  );
+
+  const websiteContext = useMemo(() => {
+    const totalProducts = sections.reduce((count, section) => count + section.items.length, 0);
+    const lightweightCatalog = sections.map((section) => ({
+      id: section.id,
+      title: section.title,
+      subtitle: section.subtitle,
+      unit: section.unit,
+      items: section.items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        weight: item.weight,
+        price: item.price,
+        discount: item.discount
+      }))
+    }));
+
+    return {
+      permissions: 'read-only',
+      pageLinks: APP_ROUTE_LINKS,
+      shopPage: {
+        storageStatus,
+        sectionOrder,
+        totalSections: sections.length,
+        totalProducts,
+        adBanners: adBanners.length,
+        sections: lightweightCatalog
+      },
+      contactPage: {
+        available: true,
+        contactDetails: CONTACT_DETAILS,
+        map: {
+          desktop: 'https://www.google.com/maps/place/Prince+Vegetables/@18.6400846,73.7597022,17z/data=!3m1!4b1!4m6!3m5!1s0x3bc2b9ec5107d9a1:0x12872532b0000000!8m2!3d18.6400846!4d73.7622771!16s%2Fg%2F11rsslnq8q?entry=ttu&g_ep=EgoyMDI2MDQwNy4wIKXMDSoASAFQAw%3D%3D',
+          mobile: 'https://maps.app.goo.gl/j6F3K9MrbL2EWhAp8?g_st=aw',
+          embed: 'https://www.google.com/maps?q=18.6400846,73.7622771&z=17&output=embed'
+        },
+        businessHours: [
+          { day: 'Friday', hours: '7 am-10 pm' },
+          { day: 'Saturday', hours: '7 am-10 pm' },
+          { day: 'Sunday', hours: '7 am-10 pm' },
+          { day: 'Monday', hours: '7 am-10 pm' },
+          { day: 'Tuesday', hours: '7 am-10 pm' },
+          { day: 'Wednesday', hours: '7 am-10 pm' },
+          { day: 'Thursday', hours: '7 am-10 pm' }
+        ]
+      }
+    };
+  }, [adBanners.length, sectionOrder, sections, storageStatus]);
+
+  useEffect(() => {
+    let currentLength = 0;
+    let isDeleting = false;
+    let pauseTicks = 0;
+
+    const timerId = window.setInterval(() => {
+      if (pauseTicks > 0) {
+        pauseTicks -= 1;
+        return;
+      }
+
+      if (!isDeleting) {
+        currentLength = Math.min(currentLength + 1, WELCOME_HEADING.length);
+        if (currentLength === WELCOME_HEADING.length) {
+          isDeleting = true;
+          pauseTicks = 10;
+        }
+      } else {
+        currentLength = Math.max(currentLength - 1, 0);
+        if (currentLength === 0) {
+          isDeleting = false;
+          pauseTicks = 4;
+        }
+      }
+
+      setTypewriterText(WELCOME_HEADING.slice(0, currentLength));
+    }, 45);
+
+    return () => {
+      window.clearInterval(timerId);
+    };
+  }, []);
+
+  useEffect(() => {
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, []);
+
+  const scrollToBottom = () => {
+    if (!scrollerRef.current) {
+      return;
+    }
+
+    scrollerRef.current.scrollTop = scrollerRef.current.scrollHeight;
+  };
+
+  const callAgentApi = async (conversationMessages) => {
+    const controller = new AbortController();
+    // Allow up to 45 seconds for heavy AI generation like detailed stats
+    const timeoutId = window.setTimeout(() => controller.abort(), 45000);
+
+    const response = await fetch('/api/agent', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        systemPrompt: SYSTEM_PROMPT,
+        messages: conversationMessages,
+        websiteContext,
+      }),
+    });
+
+    window.clearTimeout(timeoutId);
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(payload?.message || 'Unable to contact the AI assistant right now.');
+    }
+
+    return payload.reply || payload.message || 'I could not generate a response just now.';
+  };
+
+  const handleMicClick = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Your browser does not support voice input.');
+      return;
+    }
+
+    if (isRecording) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-IN';
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      setIsRecording(true);
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setInputValue((prev) => (prev ? prev + ' ' + transcript : transcript));
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error', event.error);
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognition.start();
+  };
+
+  const sendMessage = async (messageText) => {
+    const nextMessage = messageText.trim();
+    if (!nextMessage) return;
+
+    const userMessage = {
+      id: `${Date.now()}-user`,
+      role: 'user',
+      text: nextMessage,
+    };
+
+    setMessages((previous) => [...previous, userMessage]);
+    setHasStartedChat(true);
+    setIsTyping(true);
+      if (textareaRef.current) {
+        textareaRef.current.style.height = '1.8rem';
+      }
+
+    window.requestAnimationFrame(scrollToBottom);
+
+    try {
+      const conversationHistory = [
+        ...messages.map((message) => ({ role: message.role, content: message.text })),
+        { role: 'user', content: nextMessage }
+      ].slice(-6);
+
+      const assistantReply = await callAgentApi(conversationHistory);
+
+      const assistantMessage = {
+        id: `${Date.now()}-assistant`,
+        role: 'assistant',
+        text: assistantReply,
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      const assistantMessage = {
+        id: `${Date.now()}-assistant-error`,
+        role: 'assistant',
+        text: error instanceof Error ? error.message : 'The AI assistant is temporarily unavailable. Please try again.',
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+    } finally {
+      setIsTyping(false);
+      window.requestAnimationFrame(scrollToBottom);
+    }
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!inputValue.trim()) return;
+    const textToSend = inputValue;
+    setInputValue('');
+    sendMessage(textToSend);
+  };
+
+  const markImageAsFailed = (imageUrl) => {
+    setFailedImageUrls((previous) => {
+      const next = new Set(previous);
+      next.add(imageUrl);
+      return next;
+    });
+  };
+
+  const getAssistantImageUrls = (text, hintText = '') => {
+    const explicitUrls = extractImageUrls(text);
+    const source = `${String(text ?? '')} ${String(hintText ?? '')}`.toLowerCase();
+
+    // If explicit image URLs or markdown are present, prefer them.
+    if (explicitUrls.length > 0) {
+      return explicitUrls.slice(0, 3);
+    }
+
+    if (!source) return [];
+
+    // Only show catalog images when the conversation explicitly requests images/photos.
+    const imageRequestKeywords = ['image', 'photo', 'pic', 'picture', 'show', 'display', 'image of', 'photo of', 'pic of', 'picture of'];
+    const askedForImage = imageRequestKeywords.some((kw) => source.includes(kw));
+
+    if (!askedForImage) return [];
+
+    const matchedFallbackUrls = catalogImageIndex
+      .filter((entry) => {
+        if (!entry.imageUrl) return false;
+
+        return (
+          entry.simplifiedName.length > 2 && source.includes(entry.simplifiedName)
+        ) || (
+          entry.name.length > 2 && source.includes(entry.name)
+        );
+      })
+      .map((entry) => entry.imageUrl);
+
+    return Array.from(new Set(matchedFallbackUrls)).slice(0, 3);
+  };
+
+  const getPreviousUserText = (index) => {
+    for (let currentIndex = index - 1; currentIndex >= 0; currentIndex -= 1) {
+      const candidate = messages[currentIndex];
+
+      if (candidate?.role === 'user') {
+        return candidate.text;
+      }
+    }
+
+    return '';
+  };
+
+  return (
+    <div className={styles.agentPage}>
+      <section className={`${styles.chatShell} glass`}>
+        <header className={styles.chatHeader}>
+          <div className={styles.headerBadge}>
+            <Sparkles size={16} />
+            <span>Prince AI Assistant</span>
+          </div>
+        </header>
+
+        <div className={styles.chatViewport} ref={scrollerRef}>
+          <AnimatePresence mode="wait">
+            {shouldShowWelcome ? (
+              <motion.div
+                key="welcome"
+                className={styles.welcomeScreen}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20, transition: { duration: 0.28 } }}
+                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <h1 className={styles.welcomeHeading}>
+                  <span className={styles.typewriterText}>{typewriterText || '\u00A0'}</span>
+                </h1>
+                <motion.img
+                  src={aiBotGif}
+                  alt="Prince AI assistant"
+                  className={styles.welcomeGif}
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="conversation"
+                className={styles.messageList}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                {messages.map((message, index) => (
+                  <motion.div
+                    key={message.id}
+                    className={`${styles.bubbleRow} ${message.role === 'user' ? styles.userRow : styles.assistantRow}`}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.24 }}
+                  >
+                    {message.role === 'assistant'
+                      ? (() => {
+                          const assistantText = stripContactDetails(stripImageReferences(message.text));
+                          const assistantImageUrls = getAssistantImageUrls(message.text, getPreviousUserText(index));
+                          const assistantContactActions = getAssistantContactActions(message.text, getPreviousUserText(index));
+
+                          return (
+                            <div className={`${styles.bubble} ${styles.assistantBubble}`}>
+                              {assistantText ? parseMarkdownToElements(assistantText) : null}
+                              {assistantImageUrls.length > 0 ? (
+                                <div className={styles.messageImageGrid}>
+                                  {assistantImageUrls.map((imageUrl) => (
+                                    failedImageUrls.has(imageUrl) ? (
+                                      <div key={imageUrl} className={styles.imageFallbackCard}>
+                                        Image unavailable
+                                      </div>
+                                    ) : (
+                                      <img
+                                        key={imageUrl}
+                                        src={imageUrl}
+                                        alt="Shared by AI assistant"
+                                        className={styles.messageImage}
+                                        loading="lazy"
+                                        onError={() => markImageAsFailed(imageUrl)}
+                                      />
+                                    )
+                                  ))}
+                                </div>
+                              ) : null}
+                              {assistantContactActions.length > 0 ? (
+                                <ContactActionCard actions={assistantContactActions} />
+                              ) : null}
+                            </div>
+                          );
+                        })()
+                      : (
+                        <div className={`${styles.bubble} ${styles.userBubble}`}>
+                          {removeImageTokensFromText(message.text) ? <p>{removeImageTokensFromText(message.text)}</p> : null}
+                        </div>
+                      )}
+                  </motion.div>
+                ))}
+
+                {isTyping ? (
+                  <div className={`${styles.bubbleRow} ${styles.assistantRow}`}>
+                    <p className={`${styles.bubble} ${styles.assistantBubble} ${styles.typingBubble}`}>
+                      Prince AI is typing
+                    </p>
+                  </div>
+                ) : null}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <form className={styles.chatInputWrap} onSubmit={handleSubmit}>
+          <textarea
+            value={inputValue}
+            onChange={(event) => {
+              setInputValue(event.target.value);
+              // Auto-resize textarea
+              event.target.style.height = 'auto';
+              event.target.style.height = Math.min(event.target.scrollHeight, 120) + 'px';
+            }}
+              onKeyDown={handleKeyDown}
+              ref={textareaRef}
+            placeholder={isRecording ? "Listening..." : "Ask anything..."}
+            aria-label="Ask Prince AI"
+            rows={1}
+            className={styles.inputTextarea}
+          />
+          <button
+            type="button"
+            className={isRecording ? styles.recordingPulse : ''}
+            onClick={handleMicClick}
+            aria-label="Voice input"
+            title="Voice input"
+          >
+            <Mic size={17} />
+          </button>
+          <button type="submit" aria-label="Send message">
+            <SendHorizontal size={17} />
+          </button>
+        </form>
+      </section>
+    </div>
+  );
+};
+
+export default Agent;
