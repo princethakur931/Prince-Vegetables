@@ -1,9 +1,7 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Admin from './pages/Admin';
-import Agent from './pages/Agent';
-import Contact from './pages/Contact';
 import Home from './pages/Home';
 import Products from './pages/Products';
 
@@ -24,16 +22,26 @@ const normalizeAdminPath = (pathValue) => {
 const ADMIN_PANEL_PATH = normalizeAdminPath(import.meta.env.VITE_ADMIN_PANEL_PATH);
 
 function App() {
+  useEffect(() => {
+    let favicon = document.querySelector("link[rel='icon']");
+
+    if (!favicon) {
+      favicon = document.createElement('link');
+      favicon.rel = 'icon';
+      document.head.appendChild(favicon);
+    }
+
+    favicon.type = 'image/png';
+    favicon.href = appIcon;
+  }, []);
+
   return (
     <CatalogProvider>
       <Router>
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/shop" element={<Products />} />
-          <Route path="/products" element={<Navigate to="/shop" replace />} />
-          <Route path="/agent" element={<Agent />} />
-          <Route path="/contact" element={<Contact />} />
+          <Route path="/products" element={<Products />} />
           <Route path={ADMIN_PANEL_PATH} element={<Admin />} />
         </Routes>
       </Router>
