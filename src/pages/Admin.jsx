@@ -9,12 +9,14 @@ import {
   Plus,
   Shield,
   Trash2,
+  Upload,
 } from 'lucide-react';
 import styles from './Admin.module.css';
 import {
   resolveImageRef
 } from '../data/catalogSeed';
 import { useCatalog } from '../context/CatalogContext';
+import { uploadToCloudinary } from '../utils/cloudinaryUpload';
 const DEFAULT_REMOTE_API_BASE_URL = 'https://prince-vegetables.vercel.app';
 
 const resolveAdminAuthApiUrl = () => {
@@ -39,13 +41,6 @@ const ADMIN_AUTH_API_URL = resolveAdminAuthApiUrl();
 
 // Removed LOCAL_DEV_PASSWORD so we don't need double .env variables
 
-const fileToDataUrl = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error('Failed to read file'));
-    reader.readAsDataURL(file);
-  });
 
 const uploadToCloudinary = async (file) => {
   const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
@@ -137,6 +132,8 @@ const Admin = () => {
   const [offerDrafts, setOfferDrafts] = useState({});
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [adEditorOffset, setAdEditorOffset] = useState(0);
+  // uploadStates: { [key: string]: { progress: number, error: string|null } }
+  const [uploadStates, setUploadStates] = useState({});
   const adEditorPageSize = isMobileViewport ? 1 : 2;
 
   const getLastAdEditorOffset = () => {
@@ -296,6 +293,30 @@ const Admin = () => {
   const handleAdBannerUpload = async (bannerIndex, file) => {
     if (!file) return;
 
+    const uploadKey = `banner-${bannerIndex}`;
+
+    setUploadStates((prev) => ({ ...prev, [uploadKey]: { progress: 0, error: null } }));
+
+    try {
+      const cloudinaryUrl = await uploadToCloudinary(file, {
+        onProgress: (progress) =>
+          setUploadStates((prev) => ({ ...prev, [uploadKey]: { progress, error: null } }))
+      });
+      updateAdBanner(bannerIndex, cloudinaryUrl);
+    } catch (error) {
+      setUploadStates((prev) => ({
+        ...prev,
+        [uploadKey]: { progress: 0, error: error.message ?? 'Upload failed' }
+      }));
+      return;
+    }
+
+    setUploadStates((prev) => {
+      const next = { ...prev };
+      delete next[uploadKey];
+      return next;
+    });
+
     try {
       const url = await uploadToCloudinary(file);
       if (url) updateAdBanner(bannerIndex, url);
@@ -326,6 +347,30 @@ const Admin = () => {
 
   const handleProductFileUpload = async (sectionId, productId, file) => {
     if (!file) return;
+
+    const uploadKey = `product-${productId}`;
+
+    setUploadStates((prev) => ({ ...prev, [uploadKey]: { progress: 0, error: null } }));
+
+    try {
+      const cloudinaryUrl = await uploadToCloudinary(file, {
+        onProgress: (progress) =>
+          setUploadStates((prev) => ({ ...prev, [uploadKey]: { progress, error: null } }))
+      });
+      updateProduct(sectionId, productId, { imageRef: cloudinaryUrl });
+    } catch (error) {
+      setUploadStates((prev) => ({
+        ...prev,
+        [uploadKey]: { progress: 0, error: error.message ?? 'Upload failed' }
+      }));
+      return;
+    }
+
+    setUploadStates((prev) => {
+      const next = { ...prev };
+      delete next[uploadKey];
+      return next;
+    });
 
     try {
       const url = await uploadToCloudinary(file);
@@ -403,7 +448,10 @@ const Admin = () => {
 
   if (!isUnlocked) {
     return (
-      <div className={styles.authPage}>
+      <div 
+        className={styles.authPage} 
+        style={{ '--bg-url': `url('https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto/admin_lgpc7d')` }}
+      >
         <motion.div
           className={styles.authCard}
           initial={{ opacity: 0, y: 30 }}
@@ -513,16 +561,46 @@ const Admin = () => {
                 </button>
               </div>
               <div className={styles.adPreviewBox}>
-                <img src={resolveBannerRef(banner)} alt={`Shop advertisement banner ${bannerIndex + 1}`} />
-              </div>
-              <label>
-                Upload banner {bannerIndex + 1}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) => handleAdBannerUpload(bannerIndex, event.target.files?.[0])}
+                <img
+                  src={resolveBannerRef(banner)}
+                  alt={`Shop advertisement banner ${bannerIndex + 1}`}
+                  loading="lazy"
+                  decoding="async"
                 />
-              </label>
+              </div>
+              {(() => {
+                const uploadKey = `banner-${bannerIndex}`;
+                const uploadState = uploadStates[uploadKey];
+                const isUploading = !!uploadState && uploadState.error === null;
+
+                return (
+                  <label className={isUploading ? styles.uploadingLabel : ''}>
+                    <span className={styles.uploadLabelText}>
+                      <Upload size={13} />
+                      {isUploading
+                        ? `Uploading… ${uploadState.progress}%`
+                        : `Change banner ${bannerIndex + 1}`}
+                    </span>
+                    {isUploading ? (
+                      <div className={styles.progressBar}>
+                        <div
+                          className={styles.progressFill}
+                          style={{ width: `${uploadState.progress}%` }}
+                        />
+                      </div>
+                    ) : null}
+                    {uploadState?.error ? (
+                      <span className={styles.uploadError}>{uploadState.error}</span>
+                    ) : null}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={isUploading}
+                      onChange={(event) => handleAdBannerUpload(bannerIndex, event.target.files?.[0])}
+                    />
+                  </label>
+                );
+              })()}
             </article>
             );
           })}
@@ -673,7 +751,12 @@ const Admin = () => {
 
                     <div className={styles.productLayout}>
                       <div className={styles.previewBox}>
-                        <img src={resolveImageRef(product.imageRef)} alt={product.name} />
+                        <img
+                          src={resolveImageRef(product.imageRef)}
+                          alt={product.name}
+                          loading="lazy"
+                          decoding="async"
+                        />
                       </div>
 
                       <div className={styles.productFields}>
@@ -740,14 +823,41 @@ const Admin = () => {
                           </select>
                         </label>
 
-                        <label>
-                          Upload image
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(event) => handleProductFileUpload(selectedSection.id, product.id, event.target.files?.[0])}
-                          />
-                        </label>
+                        {(() => {
+                          const uploadKey = `product-${product.id}`;
+                          const uploadState = uploadStates[uploadKey];
+                          const isUploading = !!uploadState && uploadState.error === null;
+
+                          return (
+                            <label className={isUploading ? styles.uploadingLabel : ''}>
+                              <span className={styles.uploadLabelText}>
+                                <Upload size={13} />
+                                {isUploading
+                                  ? `Uploading… ${uploadState.progress}%`
+                                  : 'Upload image to Cloudinary'}
+                              </span>
+                              {isUploading ? (
+                                <div className={styles.progressBar}>
+                                  <div
+                                    className={styles.progressFill}
+                                    style={{ width: `${uploadState.progress}%` }}
+                                  />
+                                </div>
+                              ) : null}
+                              {uploadState?.error ? (
+                                <span className={styles.uploadError}>{uploadState.error}</span>
+                              ) : null}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                disabled={isUploading}
+                                onChange={(event) =>
+                                  handleProductFileUpload(selectedSection.id, product.id, event.target.files?.[0])
+                                }
+                              />
+                            </label>
+                          );
+                        })()}
                       </div>
                     </div>
                   </motion.section>

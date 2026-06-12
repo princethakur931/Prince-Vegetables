@@ -6,7 +6,12 @@ import Agent from './pages/Agent';
 import Contact from './pages/Contact';
 import Home from './pages/Home';
 import Products from './pages/Products';
+
 import { CatalogProvider } from './context/CatalogContext';
+
+import './App.css';
+
+const appIcon = `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto,w_64/Established_in_2022_n9j3bf`;
 
 const normalizeAdminPath = (pathValue) => {
   const candidate = String(pathValue ?? '/admin').trim();
