@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { SendHorizontal, Sparkles, Mic } from 'lucide-react';
 import styles from './Agent.module.css';
-import aiBotGif from '../assets/AI Bot.gif';
+const aiBotGif = `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto/AI_Bot_e5ok5d`;
 import { useCatalog } from '../context/CatalogContext';
 
 const SYSTEM_PROMPT = [
