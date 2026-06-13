@@ -20,7 +20,7 @@
   position: relative;
   overflow: hidden;
   background-image: linear-gradient(rgba(8, 26, 22, 0.52), rgba(8, 26, 22, 0.52)), var(--bg-url);
-  background-image: url('../assets/admin.gif');
+  background-image: url('https://res.cloudinary.com/dldi9hkkf/image/upload/f_auto,q_auto/admin_lgpc7d');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -101,7 +101,7 @@
 @media (prefers-reduced-motion: reduce) {
   .authPage {
     background-image: linear-gradient(rgba(8, 26, 22, 0.55), rgba(8, 26, 22, 0.55)), var(--bg-url);
-    background-image: url('../assets/admin.gif');
+    background-image: url('https://res.cloudinary.com/dldi9hkkf/image/upload/f_auto,q_auto/admin_lgpc7d');
   }
 }
 

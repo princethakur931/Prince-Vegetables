@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import PageSEO from '../components/PageSEO';
 import styles from './Contact.module.css';
-import storeVisitGif from '../assets/store-visit.gif';
-import whatsappIcon from '../assets/whatsapp.png';
-import callingIcon from '../assets/calling.png';
-import gmailIcon from '../assets/gmail.png';
+const CLD = `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`;
+const storeVisitGif = `${CLD}/f_auto,q_auto/store-visit_jhzgjj`;
+const whatsappIcon = `${CLD}/f_auto,q_auto,w_80/whatsapp_qzlpha`;
+const callingIcon = `${CLD}/f_auto,q_auto,w_80/calling_cpgdxu`;
+const gmailIcon = `${CLD}/f_auto,q_auto,w_80/gmail_mhotat`;
 
 const TYPEWRITER_TEXT = '- Step Into Freshness 💚';
 const MAP_DESKTOP_URL = 'https://www.google.com/maps/place/Prince+Vegetables/@18.6400846,73.7597022,17z/data=!3m1!4b1!4m6!3m5!1s0x3bc2b9ec5107d9a1:0x12872532b0000000!8m2!3d18.6400846!4d73.7622771!16s%2Fg%2F11rsslnq8q?entry=ttu&g_ep=EgoyMDI2MDQwNy4wIKXMDSoASAFQAw%3D%3D';
