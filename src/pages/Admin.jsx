@@ -82,7 +82,6 @@ const Admin = () => {
     sections,
     sectionOrder,
     storageStatus,
-    saveStatus,
     adBanners,
     getSection,
     updateSection,
@@ -105,34 +104,18 @@ const Admin = () => {
   const [selectedSectionId, setSelectedSectionId] = useState('');
   const [priceDrafts, setPriceDrafts] = useState({});
   const [offerDrafts, setOfferDrafts] = useState({});
-  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [adEditorOffset, setAdEditorOffset] = useState(0);
   // uploadStates: { [key: string]: { progress: number, error: string|null } }
   const [uploadStates, setUploadStates] = useState({});
-  const adEditorPageSize = isMobileViewport ? 1 : 2;
-
   const getLastAdEditorOffset = () => {
     const bannerCount = adBanners?.length ?? 0;
 
-    if (bannerCount <= adEditorPageSize) {
+    if (bannerCount <= 2) {
       return 0;
     }
 
-    return Math.floor((bannerCount - 1) / adEditorPageSize) * adEditorPageSize;
+    return Math.floor((bannerCount - 1) / 2) * 2;
   };
-
-  useEffect(() => {
-    const updateViewport = () => {
-      setIsMobileViewport(window.innerWidth <= 720);
-    };
-
-    updateViewport();
-    window.addEventListener('resize', updateViewport);
-
-    return () => {
-      window.removeEventListener('resize', updateViewport);
-    };
-  }, []);
 
   useEffect(() => {
     if (!selectedSectionId && sections.length > 0) {
@@ -201,12 +184,6 @@ const Admin = () => {
   );
 
   const selectedSection = selectedSectionId ? getSection(selectedSectionId) : sections[0];
-  const saveStatusLabel = {
-    idle: 'Idle',
-    saving: 'Saving...',
-    saved: 'Saved',
-    error: 'Save failed'
-  }[saveStatus] ?? 'Idle';
 
   const unlock = async (event) => {
     event.preventDefault();
@@ -294,15 +271,15 @@ const Admin = () => {
   };
 
   const showPreviousAdEditorPage = () => {
-    setAdEditorOffset((previous) => Math.max(0, previous - adEditorPageSize));
+    setAdEditorOffset((previous) => Math.max(0, previous - 2));
   };
 
   const showNextAdEditorPage = () => {
     const lastOffset = getLastAdEditorOffset();
-    setAdEditorOffset((previous) => Math.min(lastOffset, previous + adEditorPageSize));
+    setAdEditorOffset((previous) => Math.min(lastOffset, previous + 2));
   };
 
-  const visibleAdBanners = (adBanners ?? []).slice(adEditorOffset, adEditorOffset + adEditorPageSize);
+  const visibleAdBanners = (adBanners ?? []).slice(adEditorOffset, adEditorOffset + 2);
 
   const handleProductFileUpload = async (sectionId, productId, file) => {
     if (!file) return;
@@ -395,7 +372,7 @@ const Admin = () => {
         style={{ '--bg-url': `url('https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto/admin_lgpc7d')` }}
       >
         <motion.div
-          className={styles.authCard}
+          className={`${styles.authCard} glass`}
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -445,10 +422,6 @@ const Admin = () => {
             <span>products</span>
           </div>
           <div>
-            <strong>{saveStatusLabel}</strong>
-            <span>last save</span>
-          </div>
-          <div>
               <strong>{storageStatus}</strong>
               <span>catalog source</span>
           </div>
@@ -474,7 +447,7 @@ const Admin = () => {
               className={styles.iconButtonSmall}
               onClick={showNextAdEditorPage}
               title="Next banners"
-              disabled={adEditorOffset + adEditorPageSize >= (adBanners?.length ?? 0)}
+              disabled={adEditorOffset + 2 >= (adBanners?.length ?? 0)}
             >
               <ChevronRight size={16} />
             </button>
