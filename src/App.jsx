@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Admin from './pages/Admin';
@@ -24,19 +24,6 @@ const normalizeAdminPath = (pathValue) => {
 const ADMIN_PANEL_PATH = normalizeAdminPath(import.meta.env.VITE_ADMIN_PANEL_PATH);
 
 function App() {
-  useEffect(() => {
-    let favicon = document.querySelector("link[rel='icon']");
-
-    if (!favicon) {
-      favicon = document.createElement('link');
-      favicon.rel = 'icon';
-      document.head.appendChild(favicon);
-    }
-
-    favicon.type = 'image/png';
-    favicon.href = appIcon;
-  }, []);
-
   return (
     <CatalogProvider>
       <Router>

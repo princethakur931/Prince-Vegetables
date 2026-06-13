@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styles from './ProductCard.module.css';
 import VegetableInfoModal from './VegetableInfoModal';
 
@@ -13,6 +13,8 @@ const priceFormatter = new Intl.NumberFormat('en-IN', {
 });
 
 const ProductCard = ({ product }) => {
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
+
   return (
     <>
       <div className={styles.card}>
@@ -30,13 +32,26 @@ const ProductCard = ({ product }) => {
             height="200"
           />
         </div>
-        <div className={styles.footer}>
-          <span className={styles.price}>{priceFormatter.format(product.price)}</span>
-          <button className={styles.addButton}>
-            <img src={aiBotGif} alt="AI assistant" className={styles.addButtonGif} />
-          </button>
+        <div className={styles.content}>
+          <div className={styles.header}>
+            <h3 className={styles.title}>{product.name}</h3>
+            <p className={styles.weight}>{product.weight}</p>
+          </div>
+          <div className={styles.footer}>
+            <span className={styles.price}>{priceFormatter.format(product.price)}</span>
+            <button
+              type="button"
+              className={styles.addButton}
+              onClick={() => setIsInfoOpen(true)}
+              aria-label={`Open AI info for ${product.name}`}
+              title={`AI info for ${product.name}`}
+            >
+              <img src={aiBotGif} alt="" aria-hidden="true" className={styles.addButtonGif} />
+            </button>
+          </div>
         </div>
       </div>
+      <VegetableInfoModal product={product} isOpen={isInfoOpen} onClose={() => setIsInfoOpen(false)} />
     </>
   );
 };
